@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -12,11 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
-  Home,
   FolderOpen,
-  Calendar,
-  Users,
-  BarChart3,
   Settings,
   Plus,
   ChevronDown,
@@ -34,7 +30,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
-import { useProjects } from "./project-context"
+import { useProjects } from "../project-context"
+import { getNavigation } from "./navigation-items"
+import { getProjectIcon, getStatusColor } from "./conditional"
+import { useIsMobile, useIsTablet, useIsLaptop } from "@/lib/use-media-query"
 
 interface SidebarProps {
   className?: string
@@ -46,39 +45,24 @@ export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const { projects } = useProjects()
 
-  const navigation = [
-    {
-      name: "Dashboard",
-      href: "/apk",
-      icon: Home,
-      current: pathname === "/apk",
-    },
-    {
-      name: "Projetos",
-      href: "/apk/project",
-      icon: FolderOpen,
-      current: pathname.startsWith("/apk/project"),
-      badge: projects?.length || 0,
-    },
-    {
-      name: "Calendário",
-      href: "/apk/calendar",
-      icon: Calendar,
-      current: pathname === "/apk/calendar",
-    },
-    {
-      name: "Equipe",
-      href: "/apk/team",
-      icon: Users,
-      current: pathname === "/apk/team",
-    },
-    {
-      name: "Relatórios",
-      href: "/apk/reports",
-      icon: BarChart3,
-      current: pathname === "/apk/reports",
-    },
-  ]
+  const isMobile = useIsMobile()
+  const isTablet = useIsTablet()
+  const isLaptop = useIsLaptop()
+
+  // Auto-collapse baseado no tamanho da tela
+  useEffect(() => {
+    if (isMobile) {
+      // No mobile, sempre expandido quando visível
+      setIsCollapsed(false)
+    } else if (isTablet || isLaptop) {
+      // Tablet e laptop, colapsar por padrão para economizar espaço
+      setIsCollapsed(true)
+    } else {
+      // Desktop, expandido por padrão
+      setIsCollapsed(false)
+    }
+  }, [isMobile, isTablet, isLaptop])
+
 
   const projectStats = {
     active: projects?.filter((p) => p.status === "active").length || 0,
@@ -91,41 +75,20 @@ export function Sidebar({ className }: SidebarProps) {
     ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5) || []
 
-  const getProjectIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Clock className="h-3 w-3 text-blue-500" />
-      case "completed":
-        return <CheckCircle className="h-3 w-3 text-green-500" />
-      case "planning":
-        return <AlertCircle className="h-3 w-3 text-yellow-500" />
-      case "on-hold":
-        return <Pause className="h-3 w-3 text-gray-500" />
-      default:
-        return <FolderOpen className="h-3 w-3" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-      case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "planning":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-      case "on-hold":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
+  const navigation = getNavigation(pathname, projects)
 
   return (
     <div
       className={cn(
         "flex flex-col h-full bg-background border-r transition-all duration-300",
-        isCollapsed ? "w-16" : "w-80",
+        // Responsividade para largura
+        isMobile
+          ? "w-80" // Mobile: sempre largura total quando visível
+          : isCollapsed
+            ? "w-16" // Colapsado: largura mínima
+            : isTablet
+              ? "w-64" // Tablet: largura reduzida
+              : "w-80", // Desktop/Laptop: largura completa
         className,
       )}
     >
@@ -148,24 +111,30 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
+        <div className={cn(
+          "space-y-6",
+          isMobile ? "p-4" : isTablet ? "p-3" : "p-4"
+        )}>
           {/* Quick Actions */}
           {!isCollapsed && (
             <div className="space-y-2">
-              <Button asChild className="w-full justify-start">
+              <Button asChild className="w-full justify-start text-sm">
                 <Link href="/apk/project/new">
                   <Plus className="h-4 w-4 mr-2" />
-                  Novo Projeto
+                  {isMobile || !isTablet ? "Novo Projeto" : "Novo"}
                 </Link>
               </Button>
-              <div className="grid grid-cols-2 gap-2">
+              <div className={cn(
+                "grid gap-2",
+                isTablet ? "grid-cols-1" : "grid-cols-2"
+              )}>
                 <Button variant="outline" size="sm" className="justify-start bg-transparent">
                   <Search className="h-4 w-4 mr-1" />
-                  Buscar
+                  {!isTablet && "Buscar"}
                 </Button>
                 <Button variant="outline" size="sm" className="justify-start bg-transparent">
                   <Filter className="h-4 w-4 mr-1" />
-                  Filtrar
+                  {!isTablet && "Filtrar"}
                 </Button>
               </div>
             </div>
@@ -215,35 +184,75 @@ export function Sidebar({ className }: SidebarProps) {
           {/* Project Stats */}
           {!isCollapsed && (
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">Status dos Projetos</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950">
+              <h3 className={cn(
+                "font-medium text-muted-foreground",
+                isTablet ? "text-xs" : "text-sm"
+              )}>
+                Status dos Projetos
+              </h3>
+              <div className={cn(
+                "grid gap-2",
+                isTablet ? "grid-cols-1" : "grid-cols-2"
+              )}>
+                <div className={cn(
+                  "rounded-lg bg-blue-50 dark:bg-blue-950",
+                  isTablet ? "p-1.5" : "p-2"
+                )}>
                   <div className="flex items-center space-x-2">
                     <Clock className="h-3 w-3 text-blue-500" />
                     <span className="text-xs font-medium">Ativos</span>
                   </div>
-                  <p className="text-lg font-bold text-blue-600">{projectStats.active}</p>
+                  <p className={cn(
+                    "font-bold text-blue-600",
+                    isTablet ? "text-base" : "text-lg"
+                  )}>
+                    {projectStats.active}
+                  </p>
                 </div>
-                <div className="p-2 rounded-lg bg-green-50 dark:bg-green-950">
+                <div className={cn(
+                  "rounded-lg bg-green-50 dark:bg-green-950",
+                  isTablet ? "p-1.5" : "p-2"
+                )}>
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="h-3 w-3 text-green-500" />
                     <span className="text-xs font-medium">Concluídos</span>
                   </div>
-                  <p className="text-lg font-bold text-green-600">{projectStats.completed}</p>
+                  <p className={cn(
+                    "font-bold text-green-600",
+                    isTablet ? "text-base" : "text-lg"
+                  )}>
+                    {projectStats.completed}
+                  </p>
                 </div>
-                <div className="p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950">
+                <div className={cn(
+                  "rounded-lg bg-yellow-50 dark:bg-yellow-950",
+                  isTablet ? "p-1.5" : "p-2"
+                )}>
                   <div className="flex items-center space-x-2">
                     <AlertCircle className="h-3 w-3 text-yellow-500" />
                     <span className="text-xs font-medium">Planejamento</span>
                   </div>
-                  <p className="text-lg font-bold text-yellow-600">{projectStats.planning}</p>
+                  <p className={cn(
+                    "font-bold text-yellow-600",
+                    isTablet ? "text-base" : "text-lg"
+                  )}>
+                    {projectStats.planning}
+                  </p>
                 </div>
-                <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-950">
+                <div className={cn(
+                  "rounded-lg bg-gray-50 dark:bg-gray-950",
+                  isTablet ? "p-1.5" : "p-2"
+                )}>
                   <div className="flex items-center space-x-2">
                     <Pause className="h-3 w-3 text-gray-500" />
                     <span className="text-xs font-medium">Pausados</span>
                   </div>
-                  <p className="text-lg font-bold text-gray-600">{projectStats.onHold}</p>
+                  <p className={cn(
+                    "font-bold text-gray-600",
+                    isTablet ? "text-base" : "text-lg"
+                  )}>
+                    {projectStats.onHold}
+                  </p>
                 </div>
               </div>
             </div>

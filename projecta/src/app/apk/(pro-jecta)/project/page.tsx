@@ -1,147 +1,130 @@
 "use client"
 
-import { useProjects } from "../../../Layout/project-context"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, Users, CheckCircle, AlertCircle, Pause, Plus } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { ResponsiveContainer, PageSection } from "@/components/ui/responsive-container"
+import { ProjectGrid } from "@/components/projecta/project-grid"
+import { Plus, Search, Filter, Grid, List } from "lucide-react"
+import { useState } from "react"
+import { useIsMobile } from "@/lib/use-media-query"
+
+// Mock data para exemplo
+const mockProjects = [
+  {
+    id: "1",
+    title: "Website Redesign",
+    description: "Redesign completo do site da empresa com nova identidade visual",
+    status: "active",
+    progress: 65,
+    dueDate: "15 Jul 2025",
+    teamMembers: 5,
+    tasksCompleted: 12,
+    totalTasks: 18
+  },
+  {
+    id: "2",
+    title: "App Mobile",
+    description: "Desenvolvimento do aplicativo mobile para iOS e Android",
+    status: "planning",
+    progress: 25,
+    dueDate: "30 Ago 2025",
+    teamMembers: 8,
+    tasksCompleted: 3,
+    totalTasks: 24
+  },
+  {
+    id: "3",
+    title: "Sistema CRM",
+    description: "Implementação do novo sistema de gerenciamento de clientes",
+    status: "completed",
+    progress: 100,
+    dueDate: "01 Jun 2025",
+    teamMembers: 6,
+    tasksCompleted: 15,
+    totalTasks: 15
+  }
+]
 
 export default function ProjectsPage() {
-  const { projects } = useProjects()
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [searchTerm, setSearchTerm] = useState("")
+  const isMobile = useIsMobile()
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Clock className="h-4 w-4 text-blue-500" />
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "planning":
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      case "on-hold":
-        return <Pause className="h-4 w-4 text-gray-500" />
-      default:
-        return <Clock className="h-4 w-4" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-      case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "planning":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-      case "on-hold":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "active":
-        return "Ativo"
-      case "completed":
-        return "Concluído"
-      case "planning":
-        return "Planejamento"
-      case "on-hold":
-        return "Pausado"
-      default:
-        return status
-    }
-  }
+  const filteredProjects = mockProjects.filter(project =>
+    project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Projetos</h1>
-          <p className="text-muted-foreground">Gerencie todos os seus projetos em um só lugar</p>
-        </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Projeto
-        </Button>
-      </div>
+    <ResponsiveContainer>
+      <div className="space-y-6">
+        {/* Header da página */}
+        <PageSection
+          title="Projetos"
+          description="Gerencie todos os seus projetos em um só lugar"
+          action={
+            <Button className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              {isMobile ? "Novo" : "Novo Projeto"}
+            </Button>
+          }
+        >
+          
+        </PageSection>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <Card key={project.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(project.status)}
-                  <CardTitle className="text-lg">{project.title}</CardTitle>
-                </div>
-                <Badge className={getStatusColor(project.status)}>
-                  {getStatusText(project.status)}
-                </Badge>
-              </div>
-              <CardDescription className="line-clamp-2">
-                {project.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>
-                      {new Date(project.startDate).toLocaleDateString('pt-BR')} -
-                      {new Date(project.endDate).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-1 text-muted-foreground">
-                    <Users className="h-3 w-3" />
-                    <span>{project.members.length} membros</span>
-                  </div>
-                  <div className="text-muted-foreground">
-                    {project.tasks.length} tarefas
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{
-                        width: `${project.tasks.length > 0
-                          ? (project.tasks.filter(t => t.status === 'completed').length / project.tasks.length) * 100
-                          : 0}%`
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {project.tasks.length > 0
-                      ? Math.round((project.tasks.filter(t => t.status === 'completed').length / project.tasks.length) * 100)
-                      : 0}%
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {projects.length === 0 && (
-        <div className="text-center py-12">
-          <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Clock className="h-12 w-12 text-gray-400" />
+        {/* Filtros e busca */}
+        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar projetos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum projeto encontrado</h3>
-          <p className="text-gray-500 mb-4">Comece criando seu primeiro projeto</p>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Criar Projeto
-          </Button>
+
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              {!isMobile && "Filtros"}
+            </Button>
+
+            <div className="flex items-center border rounded-lg">
+              <Button
+                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className="rounded-r-none border-r"
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="rounded-l-none"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Grade de projetos */}
+        <PageSection>
+          {viewMode === "grid" ? (
+            <ProjectGrid projects={filteredProjects} />
+          ) : (
+            <div className="space-y-4">
+              {/* Lista de projetos - implementar depois */}
+              <p className="text-muted-foreground text-center py-8">
+                Visualização em lista em desenvolvimento
+              </p>
+            </div>
+          )}
+        </PageSection>
+      </div>
+    </ResponsiveContainer>
   )
 }

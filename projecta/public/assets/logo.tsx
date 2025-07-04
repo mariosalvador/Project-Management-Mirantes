@@ -1,10 +1,18 @@
+import Link from "next/link"
 
 
-export const LogoProject = () => {
+interface LogoProjectProps {
+  className?: string
+  textClassName?: string
+  iconClassName?: string
+}
+
+export function LogoProject({ className, textClassName, iconClassName }: LogoProjectProps) {
   return (
-    <div className="flex items-center justify-center mb-4">
-      <div className="h-8 w-8 bg-primary rounded mr-2" />
-      <span className="text-2xl font-bold">ProJecta</span>
-    </div>
+    <Link href="/" className={`flex items-center space-x-2 ${className}`}>
+      <div className={`h-6 w-6 bg-primary rounded ${iconClassName}`} />
+      <span className={`font-bold text-lg hidden sm:inline ${textClassName}`}>ProJecta</span>
+      <span className={`font-bold text-base sm:hidden ${textClassName}`}>PJ</span>
+    </Link>
   )
 }
