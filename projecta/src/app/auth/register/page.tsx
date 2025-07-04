@@ -12,7 +12,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { LogoProject } from "../../../../public/assets/logo"
-import { signUp } from "@/lib/auth"
 
 export default function RegisterPage() {
   const [name, setName] = useState("")
@@ -41,7 +40,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const success = await signUp(email, password);
+      const success = await true;
 
       if (success) {
         router.push("/")
