@@ -16,7 +16,7 @@ import {
   Target,
   ArrowLeft,
   Plus,
-  Filter,
+  Grid3X3,
   AlertCircle,
   Briefcase,
   Flag
@@ -154,14 +154,18 @@ export default function ProjectDetailsPage() {
                   Tarefas do Projeto
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filtrar
-                  </Button>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Tarefa
-                  </Button>
+                  <Link href={`/apk/project/${encodeURIComponent(project.title)}/tasks`}>
+                    <Button variant="outline" size="sm">
+                      <Grid3X3 className="h-4 w-4 mr-2" />
+                      Ver Quadro
+                    </Button>
+                  </Link>
+                  <Link href={`/apk/project/${encodeURIComponent(project.title)}/tasks/manage`}>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nova Tarefa
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </CardHeader>
