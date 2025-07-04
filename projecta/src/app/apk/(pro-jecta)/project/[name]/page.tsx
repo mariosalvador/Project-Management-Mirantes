@@ -15,7 +15,6 @@ import {
   DollarSign,
   Target,
   ArrowLeft,
-  MoreHorizontal,
   Plus,
   Filter,
   AlertCircle,
@@ -66,10 +65,12 @@ export default function ProjectDetailsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Tarefa
-          </Button>
+          <Link href={`/apk/project/${encodeURIComponent(project.title)}/tasks/manage`}>
+            <Button variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Tarefa
+            </Button>
+          </Link>
           <Link href={`/apk/project/${encodeURIComponent(project.title)}/edit`}>
             <Button>
               Editar Projeto
@@ -176,7 +177,7 @@ export default function ProjectDetailsPage() {
                         <div>
                           <h4 className="font-medium">{task.title}</h4>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>Atribuído a: {task.assignee}</span>
+                            <span>Atribuído a: {task.assignees?.join(', ') || 'Não atribuído'}</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {task.dueDate}
@@ -188,9 +189,11 @@ export default function ProjectDetailsPage() {
                         <Badge className={getTaskStatusColor(task.status)}>
                           {getTaskStatusLabel(task.status)}
                         </Badge>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        <Link href={`/apk/project/${encodeURIComponent(project.title)}/tasks/manage?taskId=${task.id}`}>
+                          <Button variant="ghost" size="sm">
+                            Editar
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   ))

@@ -195,7 +195,7 @@ export default function EditProjectPage() {
         id: Date.now().toString(),
         title: newTask.title,
         status: "pending",
-        assignee: newTask.assignee,
+        assignees: [newTask.assignee],
         dueDate: newTask.dueDate
       };
 
@@ -534,7 +534,7 @@ export default function EditProjectPage() {
                         <div className="flex-1">
                           <div className="font-medium">{task.title}</div>
                           <div className="text-sm text-muted-foreground">
-                            {task.assignee} • {task.dueDate}
+                            {task.assignees} • {task.dueDate}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

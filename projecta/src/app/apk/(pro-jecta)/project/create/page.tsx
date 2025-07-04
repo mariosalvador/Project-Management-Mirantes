@@ -144,7 +144,7 @@ export default function CreateProjectPage() {
         id: Date.now().toString(),
         title: newTask.title,
         status: "pending",
-        assignee: newTask.assignee,
+        assignees: [newTask.assignee],
         dueDate: newTask.dueDate
       };
 
@@ -419,7 +419,7 @@ export default function CreateProjectPage() {
                         <div>
                           <div className="font-medium">{task.title}</div>
                           <div className="text-sm text-muted-foreground">
-                            {task.assignee} • {task.dueDate}
+                            {task.assignees} • {task.dueDate}
                           </div>
                         </div>
                         <Button

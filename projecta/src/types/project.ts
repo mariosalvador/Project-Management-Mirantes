@@ -8,9 +8,16 @@ export interface TeamMember {
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   status: 'completed' | 'active' | 'pending';
-  assignee: string;
+  priority?: 'high' | 'medium' | 'low';
+  assignees: string[]; // Array de IDs ou nomes dos membros
   dueDate: string;
+  startDate?: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  tags?: string[];
+  dependencies?: string[]; // IDs de outras tarefas
 }
 
 export interface Milestone {
