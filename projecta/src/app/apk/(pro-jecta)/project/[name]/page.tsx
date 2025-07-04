@@ -70,9 +70,11 @@ export default function ProjectDetailsPage() {
             <Plus className="h-4 w-4 mr-2" />
             Nova Tarefa
           </Button>
-          <Button>
-            Editar Projeto
-          </Button>
+          <Link href={`/apk/project/${encodeURIComponent(project.title)}/edit`}>
+            <Button>
+              Editar Projeto
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -169,7 +171,7 @@ export default function ProjectDetailsPage() {
                     <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className={`w-3 h-3 rounded-full ${task.status === 'completed' ? 'bg-green-500' :
-                            task.status === 'active' ? 'bg-blue-500' : 'bg-gray-300'
+                          task.status === 'active' ? 'bg-blue-500' : 'bg-gray-300'
                           }`} />
                         <div>
                           <h4 className="font-medium">{task.title}</h4>

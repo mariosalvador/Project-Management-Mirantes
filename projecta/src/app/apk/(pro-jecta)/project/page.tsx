@@ -8,6 +8,7 @@ import { Plus, Search, Filter, Grid, List } from "lucide-react"
 import { useState } from "react"
 import { useIsMobile } from "@/lib/use-media-query"
 import { mockProjects } from "./mock"
+import Link from "next/link"
 
 
 export default function ProjectsPage() {
@@ -28,10 +29,12 @@ export default function ProjectsPage() {
           title="Projetos"
           description="Gerencie todos os seus projetos em um só lugar"
           action={
-            <Button className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              {isMobile ? "Novo" : "Novo Projeto"}
-            </Button>
+            <Link href="/apk/project/create">
+              <Button className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                {isMobile ? "Novo" : "Novo Projeto"}
+              </Button>
+            </Link>
           }
         >
           {/* Conteúdo do header */}
