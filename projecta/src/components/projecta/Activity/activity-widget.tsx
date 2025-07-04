@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   Activity,
   Clock,
-  ArrowRight,
   Bell
 } from 'lucide-react';
 import { useActivity } from '@/hooks/useActivity';
@@ -20,7 +19,7 @@ interface ActivityWidgetProps {
   maxItems?: number;
 }
 
-export function ActivityWidget({ className, maxItems = 5 }: ActivityWidgetProps) {
+export function ActivityWidget({ className, maxItems = 1 }: ActivityWidgetProps) {
   const { activities, unreadCount } = useActivity();
   // Pegar as atividades mais recentes
   const recentActivities = activities.slice(0, maxItems);
@@ -39,11 +38,6 @@ export function ActivityWidget({ className, maxItems = 5 }: ActivityWidgetProps)
                 {unreadCount}
               </Badge>
             )}
-            <Link href="/apk/activity">
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                <ArrowRight className="h-3 w-3" />
-              </Button>
-            </Link>
           </div>
         </div>
       </CardHeader>

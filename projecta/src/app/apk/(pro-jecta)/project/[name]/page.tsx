@@ -51,7 +51,7 @@ export default function ProjectDetailsPage() {
   }
 
   return (
-    <div className="container px-2 py-6 max-w-full">
+    <div className="container">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">

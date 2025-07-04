@@ -17,16 +17,10 @@ import {
   Plus,
   ChevronDown,
   ChevronRight,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Pause,
   Search,
-  Bell,
   Star,
   Archive,
   Trash2,
-  Filter,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
@@ -34,8 +28,6 @@ import { useProjects } from "../project-context"
 import { getNavigation } from "./navigation-items"
 import { getProjectIcon, getStatusColor } from "./conditional"
 import { useIsMobile, useIsTablet, useIsLaptop } from "@/lib/use-media-query"
-import { NotificationWidget } from "@/components/projecta/Notification/notification-widget"
-import { ActivityWidget } from "@/components/projecta/Activity/activity-widget"
 
 interface SidebarProps {
   className?: string
@@ -65,14 +57,6 @@ export function Sidebar({ className }: SidebarProps) {
     }
   }, [isMobile, isTablet, isLaptop])
 
-
-  const projectStats = {
-    active: projects?.filter((p) => p.status === "active").length || 0,
-    completed: projects?.filter((p) => p.status === "completed").length || 0,
-    planning: projects?.filter((p) => p.status === "planning").length || 0,
-    onHold: projects?.filter((p) => p.status === "on-hold").length || 0,
-  }
-
   const recentProjects = projects
     ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5) || []
@@ -82,14 +66,14 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-background border-r transition-all duration-300",
+        "flex flex-col h-full bg-background border-r transition-all duration-300 overflow-auto",
         // Responsividade para largura
         isMobile
           ? "w-80" // Mobile: sempre largura total quando visível
           : isCollapsed
             ? "w-16" // Colapsado: largura mínima
             : isTablet
-              ? "w-64" // Tablet: largura reduzida
+              ? "w-60" // Tablet: largura reduzida
               : "w-80", // Desktop/Laptop: largura completa
         className,
       )}
@@ -102,7 +86,7 @@ export function Sidebar({ className }: SidebarProps) {
               <FolderOpen className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold">ProjectHub</h2>
+              <h2 className="text-lg font-semibold">ProJecta</h2>
               <p className="text-xs text-muted-foreground">Gerenciador de Projetos</p>
             </div>
           </div>
@@ -126,17 +110,10 @@ export function Sidebar({ className }: SidebarProps) {
                   {isMobile || !isTablet ? "Novo Projeto" : "Novo"}
                 </Link>
               </Button>
-              <div className={cn(
-                "grid gap-2",
-                isTablet ? "grid-cols-1" : "grid-cols-2"
-              )}>
-                <Button variant="outline" size="sm" className="justify-start bg-transparent">
+              <div className={""}>
+                <Button variant="outline" size="sm" className="justify-start bg-transparent w-full">
                   <Search className="h-4 w-4 mr-1" />
                   {!isTablet && "Buscar"}
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start bg-transparent">
-                  <Filter className="h-4 w-4 mr-1" />
-                  {!isTablet && "Filtrar"}
                 </Button>
               </div>
             </div>
@@ -183,99 +160,6 @@ export function Sidebar({ className }: SidebarProps) {
 
           <Separator />
 
-          {/* Project Stats */}
-          {!isCollapsed && (
-            <div className="space-y-3">
-              <h3 className={cn(
-                "font-medium text-muted-foreground",
-                isTablet ? "text-xs" : "text-sm"
-              )}>
-                Status dos Projetos
-              </h3>
-              <div className={cn(
-                "grid gap-2",
-                isTablet ? "grid-cols-1" : "grid-cols-2"
-              )}>
-                <div className={cn(
-                  "rounded-lg bg-blue-50 dark:bg-blue-950",
-                  isTablet ? "p-1.5" : "p-2"
-                )}>
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-3 w-3 text-blue-500" />
-                    <span className="text-xs font-medium">Ativos</span>
-                  </div>
-                  <p className={cn(
-                    "font-bold text-blue-600",
-                    isTablet ? "text-base" : "text-lg"
-                  )}>
-                    {projectStats.active}
-                  </p>
-                </div>
-                <div className={cn(
-                  "rounded-lg bg-green-50 dark:bg-green-950",
-                  isTablet ? "p-1.5" : "p-2"
-                )}>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-3 w-3 text-green-500" />
-                    <span className="text-xs font-medium">Concluídos</span>
-                  </div>
-                  <p className={cn(
-                    "font-bold text-green-600",
-                    isTablet ? "text-base" : "text-lg"
-                  )}>
-                    {projectStats.completed}
-                  </p>
-                </div>
-                <div className={cn(
-                  "rounded-lg bg-yellow-50 dark:bg-yellow-950",
-                  isTablet ? "p-1.5" : "p-2"
-                )}>
-                  <div className="flex items-center space-x-2">
-                    <AlertCircle className="h-3 w-3 text-yellow-500" />
-                    <span className="text-xs font-medium">Planejamento</span>
-                  </div>
-                  <p className={cn(
-                    "font-bold text-yellow-600",
-                    isTablet ? "text-base" : "text-lg"
-                  )}>
-                    {projectStats.planning}
-                  </p>
-                </div>
-                <div className={cn(
-                  "rounded-lg bg-gray-50 dark:bg-gray-950",
-                  isTablet ? "p-1.5" : "p-2"
-                )}>
-                  <div className="flex items-center space-x-2">
-                    <Pause className="h-3 w-3 text-gray-500" />
-                    <span className="text-xs font-medium">Pausados</span>
-                  </div>
-                  <p className={cn(
-                    "font-bold text-gray-600",
-                    isTablet ? "text-base" : "text-lg"
-                  )}>
-                    {projectStats.onHold}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <Separator />
-
-          {/* Notificações */}
-          {!isCollapsed && (
-            <NotificationWidget compact />
-          )}
-
-          <Separator />
-
-          {/* Atividades Recentes */}
-          {!isCollapsed && (
-            <ActivityWidget maxItems={4} />
-          )}
-
-          <Separator />
-
           {/* Recent Projects */}
           <Collapsible open={isProjectsOpen} onOpenChange={setIsProjectsOpen}>
             <CollapsibleTrigger asChild>
@@ -293,7 +177,7 @@ export function Sidebar({ className }: SidebarProps) {
               {recentProjects.length === 0
                 ? !isCollapsed && <p className="text-xs text-muted-foreground p-2">Nenhum projeto encontrado</p>
                 : recentProjects.map((project) => (
-                  <Link key={project.id} href={`/apk/project/${project.id}`}>
+                  <Link key={project.id} href={`/apk/project/${project.title}`}>
                     <Button
                       variant="ghost"
                       className={cn(
@@ -330,27 +214,6 @@ export function Sidebar({ className }: SidebarProps) {
             </CollapsibleContent>
           </Collapsible>
 
-          <Separator />
-
-          {/* Quick Links */}
-          {!isCollapsed && (
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Links Rápidos</h3>
-              <Button variant="ghost" className="w-full justify-start" size="sm">
-                <Star className="h-4 w-4 mr-2" />
-                Favoritos
-              </Button>
-              <Button variant="ghost" className="w-full justify-start" size="sm">
-                <Archive className="h-4 w-4 mr-2" />
-                Arquivados
-              </Button>
-              <Button variant="ghost" className="w-full justify-start" size="sm">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Lixeira
-              </Button>
-            </div>
-          )}
-
           {isCollapsed && (
             <div className="space-y-1">
               <Button variant="ghost" size="icon" className="w-full">
@@ -384,9 +247,6 @@ export function Sidebar({ className }: SidebarProps) {
                 <p className="text-sm font-medium truncate">{"Mario Salvador"}</p>
                 <p className="text-xs text-muted-foreground truncate">{"mariosalvador"}</p>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Bell className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         ) : (

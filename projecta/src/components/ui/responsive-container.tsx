@@ -23,7 +23,7 @@ export function ResponsiveContainer({
   return (
     <div className={cn(
       "w-full mx-auto",
-      "px-4 sm:px-6 lg:px-8", // Responsivo padding horizontal
+      "", // Responsivo padding horizontal
       maxWidthClasses[maxWidth],
       className
     )}>

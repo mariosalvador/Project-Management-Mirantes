@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Clock, CheckCircle, AlertCircle, Pause, TrendingUp, Plus } from "lucide-react"
 import Link from "next/link"
+import { getStatusColor } from "@/utils/tasksFormatters"
 
 export default function DashboardPage() {
   const { projects } = useProjects()
@@ -37,30 +38,15 @@ export default function DashboardPage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-      case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "planning":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-      case "on-hold":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
   return (
-    <div className="container mx-auto p-6">
+    <div className="container">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">Painel</h1>
           <p className="text-muted-foreground">Bem-vindo ao seu painel de controle de projetos</p>
         </div>
         <Button asChild>
-          <Link href="/apk/project/new">
+          <Link href="/apk/project/create">
             <Plus className="h-4 w-4 mr-2" />
             Novo Projeto
           </Link>
@@ -134,7 +120,7 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {recentProjects.length > 0 ? (
-            <div className="space-y-4">
+            <Link href={`/apk/project/${recentProjects[0].title}`} className="space-y-4">
               {recentProjects.map((project) => (
                 <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <div className="flex items-center space-x-4">
@@ -158,7 +144,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </Link>
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">Nenhum projeto encontrado</p>
@@ -172,6 +158,7 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
     </div>
   )
 }

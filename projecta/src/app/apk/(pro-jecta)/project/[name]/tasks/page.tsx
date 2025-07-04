@@ -619,7 +619,6 @@ function TaskCard({ task, onStatusChange, projectTitle }: TaskCardProps) {
   );
 }
 
-// Componente para Visualização em Lista
 interface TaskListViewProps {
   tasks: Task[];
   onStatusChange: (taskId: string, newStatus: Task['status']) => void;

@@ -29,6 +29,7 @@ import Link from "next/link";
 import { Project, TeamMember, Task, Milestone } from "@/types/project";
 import { mockProjects } from "../../mock";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
+import { getPriorityColor, getStatusColor, getTaskStatusColor } from "@/utils/tasksFormatters";
 
 interface ProjectFormData {
   title: string;
@@ -270,49 +271,8 @@ export default function EditProjectPage() {
     }));
   };
 
-  const getStatusColor = (status: Project['status']) => {
-    switch (status) {
-      case "active":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "planning":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "on-hold":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-    }
-  };
-
-  const getPriorityColor = (priority: Project['priority']) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "low":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-    }
-  };
-
-  const getTaskStatusColor = (status: Task['status']) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "active":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "pending":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-    }
-  };
-
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="container">
       {/* Breadcrumb */}
       <div className="mb-4">
         <Breadcrumb
@@ -700,7 +660,7 @@ export default function EditProjectPage() {
                     <option value="high">Alta</option>
                   </select>
                   <div className="mt-2">
-                    <Badge className={getPriorityColor(formData.priority)}>
+                    <Badge className={getPriorityColor(formData.priority || 'medium')}>
                       {formData.priority === 'low' ? 'Baixa' :
                         formData.priority === 'medium' ? 'Média' : 'Alta'}
                     </Badge>
