@@ -1,10 +1,10 @@
 "use client"
 
+import { Comment } from "@/types/collaboration"
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
 import { toast } from "sonner"
-
+import { getSampleProjects } from "./mock-projects"
 
 export interface Task {
   id: string
@@ -19,15 +19,7 @@ export interface Task {
   comments: Comment[]
 }
 
-export interface Comment {
-  id: string
-  text: string
-  authorId: string
-  authorName: string
-  createdAt: string
-}
-
-export interface Project {
+export interface ProjectSample {
   id: string
   title: string
   description: string
@@ -42,9 +34,9 @@ export interface Project {
 }
 
 interface ProjectContextType {
-  projects: Project[]
-  createProject: (project: Omit<Project, "id" | "createdAt" | "updatedAt" | "tasks">) => void
-  updateProject: (id: string, updates: Partial<Project>) => void
+  projects: ProjectSample[]
+  createProject: (project: Omit<ProjectSample, "id" | "createdAt" | "updatedAt" | "tasks">) => void
+  updateProject: (id: string, updates: Partial<ProjectSample>) => void
   deleteProject: (id: string) => void
   addTask: (projectId: string, task: Omit<Task, "id" | "createdAt" | "updatedAt" | "comments">) => void
   updateTask: (projectId: string, taskId: string, updates: Partial<Task>) => void
@@ -56,7 +48,7 @@ interface ProjectContextType {
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<ProjectSample[]>([])
 
 
   useEffect(() => {
@@ -76,168 +68,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const getSampleProjects = (): Project[] => [
-    {
-      id: "1",
-      title: "Website Redesign",
-      description: "Redesign completo do website corporativo com nova identidade visual e melhor experiência do usuário",
-      status: "active",
-      startDate: "2024-01-01",
-      endDate: "2024-03-31",
-      members: ["user1", "user2", "user3"],
-      tasks: [
-        {
-          id: "1",
-          title: "Análise de Requisitos",
-          description: "Levantar todos os requisitos do projeto e definir escopo",
-          status: "completed",
-          priority: "high",
-          assignedTo: "user1",
-          dueDate: "2024-01-15",
-          createdAt: "2024-01-01T00:00:00Z",
-          updatedAt: "2024-01-10T00:00:00Z",
-          comments: [],
-        },
-        {
-          id: "2",
-          title: "Design UI/UX",
-          description: "Criar mockups e protótipos interativos",
-          status: "in-progress",
-          priority: "high",
-          assignedTo: "user2",
-          dueDate: "2024-02-15",
-          createdAt: "2024-01-01T00:00:00Z",
-          updatedAt: "2024-01-20T00:00:00Z",
-          comments: [],
-        },
-        {
-          id: "3",
-          title: "Desenvolvimento Frontend",
-          description: "Implementar as telas conforme design aprovado",
-          status: "todo",
-          priority: "medium",
-          assignedTo: "user3",
-          dueDate: "2024-03-01",
-          createdAt: "2024-01-01T00:00:00Z",
-          updatedAt: "2024-01-01T00:00:00Z",
-          comments: [],
-        },
-      ],
-      createdBy: "user1",
-      createdAt: "2024-01-01T00:00:00Z",
-      updatedAt: "2024-01-20T00:00:00Z",
-    },
-    {
-      id: "2",
-      title: "Sistema de Gestão",
-      description: "Desenvolvimento de sistema interno para gestão de projetos e tarefas",
-      status: "planning",
-      startDate: "2024-02-01",
-      endDate: "2024-06-30",
-      members: ["user1", "user4"],
-      tasks: [
-        {
-          id: "4",
-          title: "Levantamento de Requisitos",
-          description: "Definir funcionalidades do sistema",
-          status: "todo",
-          priority: "high",
-          assignedTo: "user1",
-          dueDate: "2024-02-15",
-          createdAt: "2024-01-15T00:00:00Z",
-          updatedAt: "2024-01-15T00:00:00Z",
-          comments: [],
-        },
-      ],
-      createdBy: "user1",
-      createdAt: "2024-01-15T00:00:00Z",
-      updatedAt: "2024-01-15T00:00:00Z",
-    },
-    {
-      id: "3",
-      title: "App Mobile",
-      description: "Aplicativo mobile para acompanhamento de projetos",
-      status: "completed",
-      startDate: "2023-10-01",
-      endDate: "2023-12-31",
-      members: ["user2", "user3"],
-      tasks: [
-        {
-          id: "5",
-          title: "Design do App",
-          description: "Criar interface do aplicativo",
-          status: "completed",
-          priority: "high",
-          assignedTo: "user2",
-          dueDate: "2023-11-15",
-          createdAt: "2023-10-01T00:00:00Z",
-          updatedAt: "2023-11-10T00:00:00Z",
-          comments: [],
-        },
-        {
-          id: "6",
-          title: "Desenvolvimento",
-          description: "Implementar funcionalidades do app",
-          status: "completed",
-          priority: "high",
-          assignedTo: "user3",
-          dueDate: "2023-12-20",
-          createdAt: "2023-10-01T00:00:00Z",
-          updatedAt: "2023-12-18T00:00:00Z",
-          comments: [],
-        },
-      ],
-      createdBy: "user2",
-      createdAt: "2023-10-01T00:00:00Z",
-      updatedAt: "2023-12-31T00:00:00Z",
-    },
-    {
-      id: "4",
-      title: "Integração API",
-      description: "Integração com APIs externas para sincronização de dados",
-      status: "on-hold",
-      startDate: "2024-01-15",
-      endDate: "2024-04-15",
-      members: ["user4"],
-      tasks: [
-        {
-          id: "7",
-          title: "Análise de APIs",
-          description: "Estudar documentação das APIs",
-          status: "completed",
-          priority: "medium",
-          assignedTo: "user4",
-          dueDate: "2024-02-01",
-          createdAt: "2024-01-15T00:00:00Z",
-          updatedAt: "2024-01-30T00:00:00Z",
-          comments: [],
-        },
-        {
-          id: "8",
-          title: "Implementação",
-          description: "Desenvolver integrações",
-          status: "todo",
-          priority: "medium",
-          assignedTo: "user4",
-          dueDate: "2024-03-15",
-          createdAt: "2024-01-15T00:00:00Z",
-          updatedAt: "2024-01-15T00:00:00Z",
-          comments: [],
-        },
-      ],
-      createdBy: "user4",
-      createdAt: "2024-01-15T00:00:00Z",
-      updatedAt: "2024-01-30T00:00:00Z",
-    },
-  ]
 
-  const saveProjects = (newProjects: Project[]) => {
+  const saveProjects = (newProjects: ProjectSample[]) => {
     setProjects(newProjects)
     localStorage.setItem("projects", JSON.stringify(newProjects))
   }
 
-  const createProject = (projectData: Omit<Project, "id" | "createdAt" | "updatedAt" | "tasks">) => {
-    const newProject: Project = {
+  const createProject = (projectData: Omit<ProjectSample, "id" | "createdAt" | "updatedAt" | "tasks">) => {
+    const newProject: ProjectSample = {
       ...projectData,
       id: Date.now().toString(),
       tasks: [],
@@ -251,7 +89,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     toast("Projeto criado com sucesso!", {})
   }
 
-  const updateProject = (id: string, updates: Partial<Project>) => {
+  const updateProject = (id: string, updates: Partial<ProjectSample>) => {
     const newProjects = projects.map((project) =>
       project.id === id ? { ...project, ...updates, updatedAt: new Date().toISOString() } : project,
     )

@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { FileManager } from "@/components/ui/file-manager";
+import { FileManager } from "@/components/projecta/File/file-manager";
 import { mockProjects } from "../../mock";
 import { Project } from "@/types/project";
 import { ArrowLeft, FolderOpen } from "lucide-react";

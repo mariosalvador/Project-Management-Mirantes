@@ -46,3 +46,31 @@ export interface Project {
   tasks?: Task[];
   milestones?: Milestone[];
 }
+
+export interface ProjectSample {
+  id: string
+  title: string
+  description: string
+  status: "planning" | "active" | "completed" | "on-hold"
+  startDate: string
+  endDate: string
+  members: string[]
+  tasks: Task[]
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProjectSample {
+  id: string
+  title: string
+  description: string
+  status: "planning" | "active" | "completed" | "on-hold"
+  startDate: string
+  endDate: string
+  members: string[]
+  tasks: Task[]
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}

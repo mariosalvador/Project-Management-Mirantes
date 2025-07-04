@@ -34,8 +34,8 @@ import { useProjects } from "../project-context"
 import { getNavigation } from "./navigation-items"
 import { getProjectIcon, getStatusColor } from "./conditional"
 import { useIsMobile, useIsTablet, useIsLaptop } from "@/lib/use-media-query"
-import { NotificationWidget } from "@/components/ui/notification-widget"
-import { ActivityWidget } from "@/components/ui/activity-widget"
+import { NotificationWidget } from "@/components/projecta/Notification/notification-widget"
+import { ActivityWidget } from "@/components/projecta/Activity/activity-widget"
 
 interface SidebarProps {
   className?: string

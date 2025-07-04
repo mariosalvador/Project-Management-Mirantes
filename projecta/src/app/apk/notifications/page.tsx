@@ -1,6 +1,6 @@
 "use client"
 
-import { NotificationDashboard } from "@/components/ui/notification-dashboard";
+import { NotificationDashboard } from "@/components/projecta/Notification/notification-dashboard";
 
 export default function NotificationsPage() {
   return (

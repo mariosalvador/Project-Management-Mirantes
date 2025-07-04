@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationCenter } from './notification-center';
-import { NotificationSettingsPanel } from './notification-settings';
 import { useState } from 'react';
+import { NotificationSettingsPanel } from './notification-settings';
 
 interface NotificationDashboardProps {
   className?: string;

@@ -62,3 +62,12 @@ export interface NotificationStats {
   urgent: number;
   overdue: number;
 }
+
+export interface NotificationItemProps {
+  notification: Notification;
+  onMarkAsRead: (id: string) => void;
+  onDelete: (id: string) => void;
+  getTimeAgo: (date: string) => string;
+  getNotificationIcon: (type: Notification['type']) => React.ReactNode;
+  getPriorityColor: (priority: Notification['priority']) => string;
+}

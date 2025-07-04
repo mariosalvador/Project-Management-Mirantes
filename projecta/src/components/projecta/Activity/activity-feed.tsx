@@ -20,7 +20,8 @@ import {
   X
 } from 'lucide-react';
 import { useActivity } from '@/hooks/useActivity';
-import { ActivityType, ACTIVITY_TEMPLATES } from '@/types/activity';
+import { ActivityType } from '@/types/activity';
+import { formatTimeAgo, getActivityTemplate } from '@/utils/formatters';
 
 interface ActivityFeedProps {
   className?: string;
@@ -116,38 +117,6 @@ export function ActivityFeed({ className, showFilters = true, maxItems, projectI
     clearFilters();
   };
 
-  const getActivityTemplate = (type: ActivityType) => {
-    return ACTIVITY_TEMPLATES[type] || {
-      title: 'Atividade',
-      getDescription: () => 'Atividade do sistema',
-      icon: '📝',
-      color: 'text-gray-600 bg-gray-50',
-      priority: 'low' as const
-    };
-  };
-
-  const formatTimeAgo = (date: string) => {
-    try {
-      const now = new Date();
-      const activityDate = new Date(date);
-      const diffMs = now.getTime() - activityDate.getTime();
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      if (diffMins < 60) {
-        return diffMins <= 0 ? 'agora' : `há ${diffMins} min`;
-      } else if (diffHours < 24) {
-        return `há ${diffHours}h`;
-      } else if (diffDays < 7) {
-        return `há ${diffDays} dias`;
-      } else {
-        return activityDate.toLocaleDateString('pt-BR');
-      }
-    } catch {
-      return 'Data inválida';
-    }
-  };
 
   const hasActiveFilters = selectedTypes.length > 0 || showOnlyUnread || searchTerm !== '';
 

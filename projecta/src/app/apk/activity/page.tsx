@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { ActivityFeed } from "@/components/ui/activity-feed";
+import { ActivityFeed } from "@/components/projecta/Activity/activity-feed";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {

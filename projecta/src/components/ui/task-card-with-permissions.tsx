@@ -20,7 +20,8 @@ import { Task } from '@/types/project';
 import { usePermissions } from '@/hooks/usePermissions';
 import { getPriorityColor, getPriorityLabel, getTaskStatusLabel } from '@/utils/tasksFormatters';
 import { cn } from '@/lib/utils';
-import { CommentSection } from './comment-section';
+import { CommentSection } from '../projecta/Comment/comment-section';
+import { formatDate } from '@/utils/formatDate';
 
 interface TaskCardWithPermissionsProps {
   task: Task;
@@ -63,10 +64,6 @@ export function TaskCardWithPermissions({
   const unassignedUsers = users.filter(user =>
     !task.assignees.includes(user.id) && !task.assignees.includes(user.name)
   );
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
 
   const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed';
 

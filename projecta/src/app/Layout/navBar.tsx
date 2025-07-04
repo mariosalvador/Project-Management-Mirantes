@@ -10,11 +10,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Plus, Search, Settings, Menu } from "lucide-react"
+import { Search, Settings, Menu } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import Link from "next/link"
 import { LogoProject } from "../../../public/assets/logo"
-import { NotificationCenter } from "@/components/ui/notification-center"
+import { NotificationCenter } from "@/components/projecta/Notification/notification-center"
 import { useNotifications } from "@/hooks/useNotifications"
 
 interface NavbarProps {
@@ -58,21 +57,6 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button asChild size="sm" className="hidden sm:flex">
-            <Link href="/projects/new">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden md:inline">Novo Projeto</span>
-              <span className="md:hidden">Novo</span>
-            </Link>
-          </Button>
-
-          {/* Mobile: Only show + icon */}
-          <Button asChild size="icon" className="sm:hidden">
-            <Link href="/projects/new">
-              <Plus className="h-4 w-4" />
-            </Link>
-          </Button>
-
           {/* Notification Center */}
           <NotificationCenter />
 

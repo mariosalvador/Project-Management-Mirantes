@@ -1,3 +1,5 @@
+import { ACTIVITY_TEMPLATES, ActivityType } from "@/types/activity";
+
 export const formatDate = (dateString: string): string => {
   try {
     if (!dateString) return "";
@@ -13,7 +15,6 @@ export const formatDate = (dateString: string): string => {
         });
       }
     }
-
     // Se a data já está formatada, retorna como está
     return dateString;
   } catch {
@@ -59,3 +60,36 @@ export const truncateText = (text: string, maxLength: number): string => {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + "...";
 };
+
+export const formatTimeAgo = (date: string) => {
+  try {
+    const now = new Date();
+    const activityDate = new Date(date);
+    const diffMs = now.getTime() - activityDate.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 60) {
+      return diffMins <= 0 ? 'agora' : `há ${diffMins} min`;
+    } else if (diffHours < 24) {
+      return `há ${diffHours}h`;
+    } else if (diffDays < 7) {
+      return `há ${diffDays} dias`;
+    } else {
+      return activityDate.toLocaleDateString('pt-BR');
+    }
+  } catch {
+    return 'Data inválida';
+  }
+};
+
+ export const getActivityTemplate = (type: ActivityType) => {
+    return ACTIVITY_TEMPLATES[type] || {
+      title: 'Atividade',
+      getDescription: () => 'Atividade do sistema',
+      icon: '📝',
+      color: 'text-gray-600 bg-gray-50',
+      priority: 'low' as const
+    };
+  };

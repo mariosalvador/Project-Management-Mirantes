@@ -12,8 +12,8 @@ import {
   Bell
 } from 'lucide-react';
 import { useActivity } from '@/hooks/useActivity';
-import { ACTIVITY_TEMPLATES } from '@/types/activity';
 import Link from 'next/link';
+import { formatTimeAgo, getActivityTemplate } from '@/utils/formatters';
 
 interface ActivityWidgetProps {
   className?: string;
@@ -22,42 +22,8 @@ interface ActivityWidgetProps {
 
 export function ActivityWidget({ className, maxItems = 5 }: ActivityWidgetProps) {
   const { activities, unreadCount } = useActivity();
-
   // Pegar as atividades mais recentes
   const recentActivities = activities.slice(0, maxItems);
-
-  const formatTimeAgo = (date: string) => {
-    try {
-      const now = new Date();
-      const activityDate = new Date(date);
-      const diffMs = now.getTime() - activityDate.getTime();
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-      if (diffMins < 60) {
-        return diffMins <= 0 ? 'agora' : `${diffMins}min`;
-      } else if (diffHours < 24) {
-        return `${diffHours}h`;
-      } else {
-        return activityDate.toLocaleDateString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit'
-        });
-      }
-    } catch {
-      return '';
-    }
-  };
-
-  const getActivityTemplate = (type: string) => {
-    return ACTIVITY_TEMPLATES[type as keyof typeof ACTIVITY_TEMPLATES] || {
-      title: 'Atividade',
-      getDescription: () => 'Atividade do sistema',
-      icon: '📝',
-      color: 'text-gray-600 bg-gray-50',
-      priority: 'low' as const
-    };
-  };
 
   return (
     <Card className={className}>

@@ -6,10 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Upload,
-  File,
-  Image as ImageIcon,
-  Video,
-  FileText,
   Download,
   Trash2,
   Eye,
@@ -18,91 +14,19 @@ import {
 } from 'lucide-react';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 import { cn } from '@/lib/utils';
+import { formatTimeAgo } from '@/utils/formatters';
+import { FileItem, FileManagerProps } from '@/types/file';
+import { formatFileSize, getFileIcon } from '@/utils/file-utils';
+import { mockFiles } from './mock';
 
-interface FileItem {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  uploadedAt: string;
-  uploadedBy: string;
-  url?: string;
-}
-
-interface FileManagerProps {
-  projectId?: string;
-  projectTitle?: string;
-  className?: string;
-}
 
 export function FileManager({ projectId, projectTitle, className }: FileManagerProps) {
-  const [files, setFiles] = useState<FileItem[]>([
-    {
-      id: '1',
-      name: 'documento-requisitos.pdf',
-      size: 2457600, // 2.4 MB
-      type: 'application/pdf',
-      uploadedAt: new Date(Date.now() - 86400000).toISOString(), // 1 dia atrás
-      uploadedBy: 'Ana Silva'
-    },
-    {
-      id: '2',
-      name: 'mockup-interface.png',
-      size: 1048576, // 1 MB
-      type: 'image/png',
-      uploadedAt: new Date(Date.now() - 3600000).toISOString(), // 1 hora atrás
-      uploadedBy: 'João Costa'
-    },
-    {
-      id: '3',
-      name: 'apresentacao-projeto.pptx',
-      size: 5242880, // 5 MB
-      type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      uploadedAt: new Date(Date.now() - 7200000).toISOString(), // 2 horas atrás
-      uploadedBy: 'Maria Santos'
-    }
-  ]);
+  const [files, setFiles] = useState<FileItem[]>(mockFiles);
 
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Hook para logging de atividades
   const { logFileUploaded, logFileDeleted } = useActivityLogger();
-
-  const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) {
-      return <ImageIcon className="h-8 w-8 text-blue-500" />;
-    } else if (type.startsWith('video/')) {
-      return <Video className="h-8 w-8 text-purple-500" />;
-    } else if (type.includes('pdf')) {
-      return <FileText className="h-8 w-8 text-red-500" />;
-    } else if (type.includes('presentation')) {
-      return <FileText className="h-8 w-8 text-orange-500" />;
-    } else if (type.includes('document') || type.includes('text')) {
-      return <FileText className="h-8 w-8 text-blue-500" />;
-    } else {
-      return <File className="h-8 w-8 text-gray-500" />;
-    }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatTimeAgo = (dateString: string) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return 'Agora há pouco';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min atrás`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} h atrás`;
-    return `${Math.floor(diffInSeconds / 86400)} dias atrás`;
-  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);

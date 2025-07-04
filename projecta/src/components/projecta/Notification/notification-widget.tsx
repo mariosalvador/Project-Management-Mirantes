@@ -3,10 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  AlertTriangle,
-  Clock,
-  User,
-  FolderOpen,
   CheckCircle2,
   Bell,
   ExternalLink
@@ -15,6 +11,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useNotificationStats } from '@/hooks/useTaskMonitoring';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { getNotificationIcon, getPriorityStyle } from '@/utils/notification';
 
 interface NotificationWidgetProps {
   className?: string;
@@ -29,32 +26,6 @@ export function NotificationWidget({ className, compact = false }: NotificationW
   const urgentNotifications = notifications.filter(n =>
     !n.isRead && (n.priority === 'urgent' || n.priority === 'high')
   ).slice(0, compact ? 3 : 5);
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'task_deadline':
-        return <Clock className="h-4 w-4 text-orange-500" />;
-      case 'overdue_task':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'task_assignment':
-        return <User className="h-4 w-4 text-green-500" />;
-      case 'project_assignment':
-        return <FolderOpen className="h-4 w-4 text-purple-500" />;
-      default:
-        return <Bell className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getPriorityStyle = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return 'border-l-red-500 bg-red-50 dark:bg-red-950/10';
-      case 'high':
-        return 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/10';
-      default:
-        return 'border-l-gray-300';
-    }
-  };
 
   if (compact) {
     return (
