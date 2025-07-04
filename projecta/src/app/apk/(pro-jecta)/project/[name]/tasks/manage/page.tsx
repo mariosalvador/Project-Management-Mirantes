@@ -27,6 +27,7 @@ import Link from "next/link";
 import { Project, TeamMember, Task } from "@/types/project";
 import { mockProjects } from "../../../mock";
 import { getPriorityColor, getPriorityLabel, getStatusColor, getStatusLabel } from "@/utils/tasksFormatters";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 
 interface TaskFormData {
   title: string;
@@ -52,6 +53,9 @@ export default function TaskManagePage() {
   const project = mockProjects.find((p: Project) => p.title === decodedName);
   const isEditing = !!taskId;
   const existingTask = project?.tasks?.find((t: Task) => t.id === taskId);
+
+  // Hook para logging de atividades
+  const { logTaskCreated, logTaskUpdated } = useActivityLogger();
 
   const [formData, setFormData] = useState<TaskFormData>({
     title: "",
@@ -148,6 +152,23 @@ export default function TaskManagePage() {
 
     // Aqui você salvaria a tarefa
     console.log(isEditing ? "Atualizando tarefa:" : "Criando tarefa:", taskData);
+
+    // Registrar atividade no feed
+    if (isEditing) {
+      logTaskUpdated({
+        taskId: taskData.id,
+        taskTitle: taskData.title,
+        projectId: project.id,
+        projectTitle: project.title
+      });
+    } else {
+      logTaskCreated({
+        taskId: taskData.id,
+        taskTitle: taskData.title,
+        projectId: project.id,
+        projectTitle: project.title
+      });
+    }
 
     // Simular salvamento e redirecionar
     router.push(`/apk/project/${encodeURIComponent(project.title)}`);
@@ -350,8 +371,8 @@ export default function TaskManagePage() {
                       <div
                         key={member.id}
                         className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${formData.assignees.includes(member.name)
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover:bg-muted/50'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:bg-muted/50'
                           }`}
                         onClick={() => toggleMemberAssignment(member.name)}
                       >

@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 import { Project, TeamMember, Task, Milestone } from "@/types/project";
 import { getPriorityColor, getStatusColor } from "@/utils/tasksFormatters";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 
 interface ProjectFormData {
   title: string;
@@ -44,6 +45,9 @@ interface ProjectFormData {
 
 export default function CreateProjectPage() {
   const router = useRouter();
+
+  // Hook para logging de atividades
+  const { logProjectCreated } = useActivityLogger();
 
   const [formData, setFormData] = useState<ProjectFormData>({
     title: "",
@@ -108,6 +112,13 @@ export default function CreateProjectPage() {
 
     // Aqui você salvaria o projeto
     console.log("Salvando projeto:", formData);
+
+    // Registrar atividade no feed
+    const projectId = Date.now().toString();
+    logProjectCreated({
+      projectId: projectId,
+      projectTitle: formData.title
+    });
 
     // Simular salvamento e redirecionar
     router.push("/apk/project");

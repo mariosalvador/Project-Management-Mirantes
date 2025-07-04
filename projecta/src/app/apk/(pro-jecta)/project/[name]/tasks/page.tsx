@@ -37,6 +37,7 @@ import {
 } from "@/utils/tasksFormatters";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useTaskDeadlineMonitor } from "@/hooks/useTaskMonitoring";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 
 // Configuração das colunas do Kanban
 interface TaskColumn {
@@ -89,6 +90,9 @@ export default function ProjectTasksPage() {
 
   // Sistema de notificações
   const { notifyTaskStatusChange } = useNotifications();
+
+  // Sistema de atividades
+  const { logTaskStatusChanged } = useActivityLogger();
 
   // Monitor de prazos de tarefas
   useTaskDeadlineMonitor(tasks, project);
@@ -173,6 +177,18 @@ export default function ProjectTasksPage() {
     // Criar notificação de mudança de status
     if (project && oldStatus !== newStatus) {
       notifyTaskStatusChange(task, oldStatus, newStatus, project.title);
+
+      // Registrar atividade no feed
+      logTaskStatusChanged(
+        {
+          taskId: task.id,
+          taskTitle: task.title,
+          projectId: project.id,
+          projectTitle: project.title
+        },
+        oldStatus,
+        newStatus
+      );
     }
   };
 

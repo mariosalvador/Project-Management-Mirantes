@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { Project, TeamMember, Task, Milestone } from "@/types/project";
 import { mockProjects } from "../../mock";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 
 interface ProjectFormData {
   title: string;
@@ -50,6 +51,9 @@ export default function EditProjectPage() {
 
   const decodedName = decodeURIComponent(name);
   const project = mockProjects.find(p => p.title === decodedName);
+
+  // Hook para logging de atividades
+  const { logProjectUpdated } = useActivityLogger();
 
   const [formData, setFormData] = useState<ProjectFormData>({
     title: "",
@@ -153,6 +157,14 @@ export default function EditProjectPage() {
 
     // Aqui você salvaria as alterações do projeto
     console.log("Salvando alterações do projeto:", formData);
+
+    // Registrar atividade no feed
+    if (project) {
+      logProjectUpdated({
+        projectId: project.id,
+        projectTitle: formData.title
+      });
+    }
 
     // Simular salvamento e redirecionar
     router.push(`/apk/project/${project.title}`);

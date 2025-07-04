@@ -1,4 +1,4 @@
-import { BarChart3, Calendar, FolderOpen, Home, Users, Bell } from "lucide-react";
+import { BarChart3, Calendar, FolderOpen, Home, Users, Bell, Activity } from "lucide-react";
 
 interface Project {
   id: string;
@@ -29,6 +29,12 @@ export const getNavigation = (pathname: string, projects: Project[] | undefined)
     current: pathname === "/apk/notifications",
   },
   {
+    name: "Atividades",
+    href: "/apk/activity",
+    icon: Activity,
+    current: pathname === "/apk/activity",
+  },
+  {
     name: "Calendário",
     href: "/apk/calendar",
     icon: Calendar,
@@ -39,6 +45,12 @@ export const getNavigation = (pathname: string, projects: Project[] | undefined)
     href: "/apk/team",
     icon: Users,
     current: pathname === "/apk/team",
+  },
+  {
+    name: "Usuários",
+    href: "/apk/users",
+    icon: Users,
+    current: pathname === "/apk/users",
   },
   {
     name: "Relatórios",

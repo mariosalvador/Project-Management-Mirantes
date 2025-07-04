@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Calendar, Users, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { Project } from "@/types/project"
+import { getStatusColor, getStatusLabel } from "@/utils/tasksFormatters"
 
 interface ProjectCardProps {
   project: Project
@@ -12,36 +13,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, className }: ProjectCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-      case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "planning":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-      case "on-hold":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "active":
-        return "Ativo"
-      case "completed":
-        return "Concluído"
-      case "planning":
-        return "Planejamento"
-      case "on-hold":
-        return "Pausado"
-      default:
-        return status
-    }
-  }
-
+  
   return (
     <Card className={cn(
       "group hover:shadow-md transition-all duration-200 cursor-pointer",
@@ -67,7 +39,6 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
               className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => {
                 e.preventDefault()
-                // Handle menu click
               }}
             >
               <MoreHorizontal className="h-4 w-4" />

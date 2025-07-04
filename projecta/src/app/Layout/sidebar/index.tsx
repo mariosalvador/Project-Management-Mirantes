@@ -35,6 +35,7 @@ import { getNavigation } from "./navigation-items"
 import { getProjectIcon, getStatusColor } from "./conditional"
 import { useIsMobile, useIsTablet, useIsLaptop } from "@/lib/use-media-query"
 import { NotificationWidget } from "@/components/ui/notification-widget"
+import { ActivityWidget } from "@/components/ui/activity-widget"
 
 interface SidebarProps {
   className?: string
@@ -264,6 +265,13 @@ export function Sidebar({ className }: SidebarProps) {
           {/* Notificações */}
           {!isCollapsed && (
             <NotificationWidget compact />
+          )}
+
+          <Separator />
+
+          {/* Atividades Recentes */}
+          {!isCollapsed && (
+            <ActivityWidget maxItems={4} />
           )}
 
           <Separator />

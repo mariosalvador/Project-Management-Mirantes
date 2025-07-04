@@ -19,7 +19,8 @@ import {
   Grid3X3,
   AlertCircle,
   Briefcase,
-  Flag
+  Flag,
+  Upload
 } from "lucide-react";
 import Link from "next/link";
 import { getPriorityColor, getPriorityLabel, getStatusColor, getStatusLabel, getTaskStatusColor, getTaskStatusLabel } from "@/utils/tasksFormatters";
@@ -65,6 +66,12 @@ export default function ProjectDetailsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link href={`/apk/project/${encodeURIComponent(project.title)}/files`}>
+            <Button variant="outline">
+              <Upload className="h-4 w-4 mr-2" />
+              Arquivos
+            </Button>
+          </Link>
           <Link href={`/apk/project/${encodeURIComponent(project.title)}/tasks/manage`}>
             <Button variant="outline">
               <Plus className="h-4 w-4 mr-2" />
