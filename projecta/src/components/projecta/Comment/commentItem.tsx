@@ -41,7 +41,7 @@ export function CommentItem({
           {/* Header do comentário */}
           <div className="flex items-start gap-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={comment.authorAvatar} />
+              <AvatarImage src={comment.authorName} />
               <AvatarFallback>
                 {comment.authorName.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>

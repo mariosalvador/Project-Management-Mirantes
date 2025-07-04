@@ -32,4 +32,12 @@ export interface Comment {
   authorId: string
   authorName: string
   createdAt: string
+  reactions?: {
+    emoji: string
+    userId: string
+    userName: string
+    createdAt: string
+  }[],
+  content: string
+  isEdited?: boolean
 }

@@ -165,8 +165,14 @@ export function CommentSection({ projectId, taskId, className }: CommentSectionP
         {organizedComments.map((comment) => (
           <CommentItem
             key={comment.id}
-            comment={comment}
-            replies={getReplies(comment.id)}
+            comment={{
+              ...comment,
+              text: comment.content 
+            }}
+            replies={getReplies(comment.id).map(reply => ({
+              ...reply,
+              text: reply.content
+            }))}
             editingId={editingId}
             editContent={editContent}
             replyingTo={replyingTo}
