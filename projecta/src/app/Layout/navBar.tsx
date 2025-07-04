@@ -10,11 +10,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Plus, Search, Settings, Menu } from "lucide-react"
+import { Plus, Search, Settings, Menu } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
 import { LogoProject } from "../../../public/assets/logo"
+import { NotificationCenter } from "@/components/ui/notification-center"
+import { useNotifications } from "@/hooks/useNotifications"
 
 interface NavbarProps {
   onMenuClick?: () => void
@@ -22,6 +23,8 @@ interface NavbarProps {
 }
 
 export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
+  const { stats } = useNotifications();
+  console.log("Navbar stats:", stats);
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -70,10 +73,8 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             </Link>
           </Button>
 
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">3</Badge>
-          </Button>
+          {/* Notification Center */}
+          <NotificationCenter />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

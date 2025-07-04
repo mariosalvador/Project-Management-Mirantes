@@ -35,6 +35,8 @@ import {
   getTasksStats,
   getTaskStatusLabel
 } from "@/utils/tasksFormatters";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useTaskDeadlineMonitor } from "@/hooks/useTaskMonitoring";
 
 // Configuração das colunas do Kanban
 interface TaskColumn {
@@ -84,6 +86,12 @@ export default function ProjectTasksPage() {
 
   // Sistema de toast
   const { toast, showToast, hideToast } = useToast();
+
+  // Sistema de notificações
+  const { notifyTaskStatusChange } = useNotifications();
+
+  // Monitor de prazos de tarefas
+  useTaskDeadlineMonitor(tasks, project);
 
   useEffect(() => {
     if (project?.tasks) {
@@ -148,6 +156,10 @@ export default function ProjectTasksPage() {
 
   // Função para mudar status da tarefa com click
   const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const oldStatus = task.status;
     const updatedTasks = tasks.map(task =>
       task.id === taskId
         ? { ...task, status: newStatus }
@@ -156,9 +168,11 @@ export default function ProjectTasksPage() {
     setTasks(updatedTasks);
 
     // Feedback visual com toast
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      showToast(`Tarefa "${task.title}" movida para ${getTaskStatusLabel(newStatus)}`, 'success');
+    showToast(`Tarefa "${task.title}" movida para ${getTaskStatusLabel(newStatus)}`, 'success');
+
+    // Criar notificação de mudança de status
+    if (project && oldStatus !== newStatus) {
+      notifyTaskStatusChange(task, oldStatus, newStatus, project.title);
     }
   };
 
@@ -409,8 +423,8 @@ export default function ProjectTasksPage() {
                 {/* Drop Zone para Tarefas */}
                 <div
                   className={`space-y-3 min-h-[200px] p-2 rounded-lg border-2 border-dashed transition-all duration-200 ${draggedTask
-                      ? 'border-primary/50 bg-primary/5'
-                      : 'border-transparent hover:border-muted-foreground/25'
+                    ? 'border-primary/50 bg-primary/5'
+                    : 'border-transparent hover:border-muted-foreground/25'
                     }`}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, column.status)}
@@ -422,8 +436,8 @@ export default function ProjectTasksPage() {
                       onDragStart={(e) => handleDragStart(e, task.id)}
                       onDragEnd={handleDragEnd}
                       className={`transition-all duration-200 ${draggedTask === task.id
-                          ? 'opacity-50 scale-95 rotate-2'
-                          : 'opacity-100 scale-100 rotate-0'
+                        ? 'opacity-50 scale-95 rotate-2'
+                        : 'opacity-100 scale-100 rotate-0'
                         }`}
                     >
                       <TaskCard
@@ -621,7 +635,7 @@ function TaskListView({ tasks, onStatusChange, projectTitle }: TaskListViewProps
               <div key={task.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                 {/* Status Indicator */}
                 <div className={`w-3 h-3 rounded-full transition-colors ${task.status === 'completed' ? 'bg-green-500' :
-                    task.status === 'active' ? 'bg-blue-500' : 'bg-gray-300'
+                  task.status === 'active' ? 'bg-blue-500' : 'bg-gray-300'
                   }`} />
 
                 {/* Task Info */}
