@@ -3,47 +3,12 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ResponsiveContainer, PageSection } from "@/components/ui/responsive-container"
-import { ProjectGrid } from "@/components/projecta/project-grid"
+import { ProjectGrid } from "@/components/projecta/project/project-grid"
 import { Plus, Search, Filter, Grid, List } from "lucide-react"
 import { useState } from "react"
 import { useIsMobile } from "@/lib/use-media-query"
+import { mockProjects } from "./mock"
 
-// Mock data para exemplo
-const mockProjects = [
-  {
-    id: "1",
-    title: "Website Redesign",
-    description: "Redesign completo do site da empresa com nova identidade visual",
-    status: "active",
-    progress: 65,
-    dueDate: "15 Jul 2025",
-    teamMembers: 5,
-    tasksCompleted: 12,
-    totalTasks: 18
-  },
-  {
-    id: "2",
-    title: "App Mobile",
-    description: "Desenvolvimento do aplicativo mobile para iOS e Android",
-    status: "planning",
-    progress: 25,
-    dueDate: "30 Ago 2025",
-    teamMembers: 8,
-    tasksCompleted: 3,
-    totalTasks: 24
-  },
-  {
-    id: "3",
-    title: "Sistema CRM",
-    description: "Implementação do novo sistema de gerenciamento de clientes",
-    status: "completed",
-    progress: 100,
-    dueDate: "01 Jun 2025",
-    teamMembers: 6,
-    tasksCompleted: 15,
-    totalTasks: 15
-  }
-]
 
 export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -69,7 +34,7 @@ export default function ProjectsPage() {
             </Button>
           }
         >
-          
+          {/* Conteúdo do header */}
         </PageSection>
 
         {/* Filtros e busca */}

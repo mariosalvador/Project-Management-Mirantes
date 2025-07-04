@@ -4,19 +4,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Calendar, Users, CheckCircle } from "lucide-react"
 import Link from "next/link"
+import { Project } from "@/types/project"
 
 interface ProjectCardProps {
-  project: {
-    id: string
-    title: string
-    description?: string
-    status: string
-    progress?: number
-    dueDate?: string
-    teamMembers?: number
-    tasksCompleted?: number
-    totalTasks?: number
-  }
+  project: Project
   className?: string
 }
 
@@ -57,7 +48,7 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
       "w-full",
       className
     )}>
-      <Link href={`/apk/project/${project.id}`}>
+      <Link href={`/apk/project/${project.title}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">

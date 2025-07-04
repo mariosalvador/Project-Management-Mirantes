@@ -1,18 +1,9 @@
 import { cn } from "@/lib/utils"
 import { ProjectCard } from "./project-card"
+import { Project } from "@/types/project"
 
 interface ProjectGridProps {
-  projects: Array<{
-    id: string
-    title: string
-    description?: string
-    status: string
-    progress?: number
-    dueDate?: string
-    teamMembers?: number
-    tasksCompleted?: number
-    totalTasks?: number
-  }>
+  projects: Project[]
   className?: string
 }
 
@@ -49,8 +40,8 @@ export function ProjectGrid({ projects, className }: ProjectGridProps) {
       // Responsividade da grade
       "grid-cols-1",           // Mobile: 1 coluna
       "sm:grid-cols-2",        // Tablet pequeno: 2 colunas
-      "lg:grid-cols-3",        // Laptop: 3 colunas
-      "xl:grid-cols-4",        // Desktop: 4 colunas
+      "lg:grid-cols-2",        // Laptop: 3 colunas
+      "xl:grid-cols-2",        // Desktop: 4 colunas
       "2xl:grid-cols-5",       // Desktop grande: 5 colunas
       className
     )}>
