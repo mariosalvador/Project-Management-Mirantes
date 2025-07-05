@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { LogoProject } from "../../../../public/assets/logo"
 import { signUp } from "@/Api/services/auth"
+import { PublicRoute } from "@/components/auth/RouteProtection"
 
 export default function RegisterPage() {
   const [name, setName] = useState("")
@@ -41,11 +42,10 @@ export default function RegisterPage() {
     }
 
     try {
-      const success = await signUp(email,password);
+      const success = await signUp(email, password);
 
       if (success) {
-      console.log("Conta criada com sucesso:", success)
-      router.push("/apk")
+        router.push("/auth/login")
       } else {
         setError("Este email já está em uso")
       }
@@ -58,81 +58,83 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <LogoProject />
-          <CardTitle className="text-2xl text-center">Criar Conta</CardTitle>
-          <CardDescription className="text-center">Crie sua conta para começar a gerenciar projetos</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+    <PublicRoute>
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <LogoProject />
+            <CardTitle className="text-2xl text-center">Criar Conta</CardTitle>
+            <CardDescription className="text-center">Crie sua conta para começar a gerenciar projetos</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome completo</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Seu nome"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome completo</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Seu nome"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar senha</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Criar Conta
+              </Button>
+            </form>
+
+            <div className="mt-4 text-center text-sm">
+              Já tem uma conta?{" "}
+              <Link href="/auth/login" className="text-primary hover:underline">
+                Entrar
+              </Link>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar senha</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Criar Conta
-            </Button>
-          </form>
-
-          <div className="mt-4 text-center text-sm">
-            Já tem uma conta?{" "}
-            <Link href="/auth/login" className="text-primary hover:underline">
-              Entrar
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
+    </PublicRoute>
   )
 }

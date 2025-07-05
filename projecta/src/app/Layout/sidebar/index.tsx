@@ -25,12 +25,14 @@ import { useProjects } from "../project-context"
 import { getNavigation } from "./navigation-items"
 import { getProjectIcon, getStatusColor } from "./conditional"
 import { useIsMobile, useIsTablet, useIsLaptop } from "@/lib/use-media-query"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface SidebarProps {
   className?: string
 }
 
 export function Sidebar({ className }: SidebarProps) {
+  const { user, userData } = useAuth()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isProjectsOpen, setIsProjectsOpen] = useState(true)
   const pathname = usePathname()
@@ -43,16 +45,25 @@ export function Sidebar({ className }: SidebarProps) {
   // Auto-collapse baseado no tamanho da tela
   useEffect(() => {
     if (isMobile) {
-      // No mobile, sempre expandido quando visível
       setIsCollapsed(false)
     } else if (isTablet || isLaptop) {
-      // Tablet e laptop, colapsar por padrão para economizar espaço
       setIsCollapsed(true)
     } else {
-      // Desktop, expandido por padrão
       setIsCollapsed(false)
     }
   }, [isMobile, isTablet, isLaptop])
+
+  if (!user) return null
+  const displayName = userData?.displayName || user.displayName || user.email?.split('@')[0] || 'Usuário'
+  const photoURL = userData?.photoURL || user.photoURL
+
+  // Iniciais para o avatar
+  const initials = displayName
+    .split(' ')
+    .map(name => name[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 
   const recentProjects = projects
     ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -210,20 +221,6 @@ export function Sidebar({ className }: SidebarProps) {
                 ))}
             </CollapsibleContent>
           </Collapsible>
-
-          {/* {isCollapsed && (
-            <div className="space-y-1">
-              <Button variant="ghost" size="icon" className="w-full">
-                <Star className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="w-full">
-                <Archive className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="w-full">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          )} */}
         </div>
       </ScrollArea>
 
@@ -236,13 +233,17 @@ export function Sidebar({ className }: SidebarProps) {
               Configurações
             </Button>
             <div className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={"github.com/mariosalvador.png"} alt={"mariosalvador"} />
-                <AvatarFallback>{"M"}</AvatarFallback>
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={photoURL || ''} alt={displayName} />
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{"Mario Salvador"}</p>
-                <p className="text-xs text-muted-foreground truncate">{"mariosalvador"}</p>
+                <p className="text-sm font-medium truncate">
+                  {userData?.displayName || displayName}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user?.email}
+                </p>
               </div>
             </div>
           </div>
@@ -252,9 +253,9 @@ export function Sidebar({ className }: SidebarProps) {
               <Settings className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" className="w-full">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={"github.com/mariosalvador.png"} alt={"mariosalvador"} />
-                <AvatarFallback className="text-xs">{"M"}</AvatarFallback>
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={photoURL || ''} alt={displayName} />
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </Button>
           </div>

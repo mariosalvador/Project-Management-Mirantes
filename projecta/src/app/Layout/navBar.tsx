@@ -1,20 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Settings, Menu } from "lucide-react"
+import { Search, Menu } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { LogoProject } from "../../../public/assets/logo"
 import { NotificationCenter } from "@/components/projecta/Notification/notification-center"
 import { useNotifications } from "@/hooks/useNotifications"
+import { UserMenu } from "@/components/auth/UserComponents"
 
 interface NavbarProps {
   onMenuClick?: () => void
@@ -59,34 +51,11 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
         <div className="flex items-center space-x-5">
           {/* Notification Center */}
           <div className="relative">
-          <NotificationCenter />
+            <NotificationCenter />
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={"github.com/mariosalvador.png"} alt={"@mariosalvador"} />
-                  <AvatarFallback>{"M"}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{"Mario Salvador"}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{"mariosalvador@github"}</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Configurações</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Sair</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* User Menu */}
+          <UserMenu />
         </div>
       </div>
     </header>
