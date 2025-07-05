@@ -5,7 +5,6 @@ import { Task } from '@/types/project';
 import { TaskWithCollaboration, Activity, Comment } from '@/types/collaboration';
 import { usePermissions } from './usePermissions';
 import { useActivityLogger } from './useActivityLogger';
-import { useNotifications } from './useNotifications';
 
 interface UseTaskCollaborationProps {
   projectId: string;
@@ -15,7 +14,6 @@ interface UseTaskCollaborationProps {
 export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaborationProps) {
   const { hasPermission, currentUser, users } = usePermissions();
   const { logTaskAssigned, logTaskUpdated, logTaskStatusChanged } = useActivityLogger();
-  const { addNotificationForUser } = useNotifications();
 
   // Estado das tarefas (em uma aplicação real, isso viria de um contexto ou API)
   const [tasks, setTasks] = useState<TaskWithCollaboration[]>([]);
@@ -60,16 +58,6 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
           projectId,
           projectTitle: 'Projeto' // Em uma app real, isso viria dos dados do projeto
         }, assignedUser.name);
-
-        // Notificar o usuário atribuído
-        addNotificationForUser(userId, {
-          type: 'task_assignment',
-          title: 'Tarefa Atribuída',
-          message: `Você foi atribuído à tarefa "${currentTask.title}"`,
-          projectId,
-          taskId,
-          priority: 'medium'
-        });
       }
 
       return true;
@@ -79,7 +67,7 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
     } finally {
       setLoading(false);
     }
-  }, [canAssign, currentTask, currentUser, taskId, users, logTaskAssigned, addNotificationForUser, projectId]);
+  }, [canAssign, currentTask, currentUser, taskId, users, logTaskAssigned, projectId]);
 
   // Desatribuir usuário da tarefa
   const unassignUser = useCallback(async (userId: string) => {
@@ -141,22 +129,6 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
         projectTitle: 'Projeto'
       }, currentTask.status, newStatus);
 
-      // Notificar usuários atribuídos sobre mudança de status
-      currentTask.assignees.forEach(assigneeId => {
-        if (assigneeId !== currentUser?.id) {
-          addNotificationForUser(assigneeId, {
-            type: 'task_status_change',
-            title: 'Status da Tarefa Atualizado',
-            message: `O status da tarefa "${currentTask.title}" foi alterado para ${newStatus === 'completed' ? 'Concluída' :
-                newStatus === 'active' ? 'Em Andamento' : 'Pendente'
-              }`,
-            projectId,
-            taskId,
-            priority: 'medium'
-          });
-        }
-      });
-
       return true;
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
@@ -164,7 +136,7 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
     } finally {
       setLoading(false);
     }
-  }, [canEdit, currentTask, taskId, logTaskStatusChanged, projectId, addNotificationForUser, currentUser]);
+  }, [canEdit, currentTask, taskId, logTaskStatusChanged, projectId]);
 
   // Atualizar observadores da tarefa
   const updateWatchers = useCallback(async (watcherIds: string[]) => {
@@ -217,35 +189,6 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
         task.id === taskId ? updatedTask : task
       ));
 
-      // Notificar usuários mencionados
-      mentions.forEach(mentionedUserId => {
-        const mentionedUser = users.find(u => u.id === mentionedUserId);
-        if (mentionedUser) {
-          addNotificationForUser(mentionedUserId, {
-            type: 'mention',
-            title: 'Você foi mencionado',
-            message: `${currentUser.name} mencionou você em um comentário da tarefa "${currentTask.title}"`,
-            projectId,
-            taskId,
-            priority: 'high'
-          });
-        }
-      });
-
-      // Notificar observadores sobre novo comentário
-      (currentTask.watchers || []).forEach(watcherId => {
-        if (watcherId !== currentUser.id && !mentions.includes(watcherId)) {
-          addNotificationForUser(watcherId, {
-            type: 'comment',
-            title: 'Novo Comentário',
-            message: `${currentUser.name} comentou na tarefa "${currentTask.title}"`,
-            projectId,
-            taskId,
-            priority: 'low'
-          });
-        }
-      });
-
       return true;
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error);
@@ -253,7 +196,7 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
     } finally {
       setLoading(false);
     }
-  }, [canComment, currentTask, currentUser, taskId, users, addNotificationForUser, projectId]);
+  }, [canComment, currentTask, currentUser, taskId]);
 
   // Adicionar atualização à tarefa
   const addTaskUpdate = useCallback(async (updateContent: string) => {
@@ -286,20 +229,6 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
         task.id === taskId ? updatedTask : task
       ));
 
-      // Notificar usuários atribuídos sobre a atualização
-      currentTask.assignees.forEach(assigneeId => {
-        if (assigneeId !== currentUser.id) {
-          addNotificationForUser(assigneeId, {
-            type: 'task_update',
-            title: 'Atualização da Tarefa',
-            message: `${currentUser.name} adicionou uma atualização à tarefa "${currentTask.title}"`,
-            projectId,
-            taskId,
-            priority: 'medium'
-          });
-        }
-      });
-
       return true;
     } catch (error) {
       console.error('Erro ao adicionar atualização:', error);
@@ -307,7 +236,7 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
     } finally {
       setLoading(false);
     }
-  }, [canEdit, currentTask, currentUser, taskId, addNotificationForUser, projectId]);
+  }, [canEdit, currentTask, currentUser, taskId]);
 
   // Obter usuários disponíveis para atribuição
   const getAvailableUsers = useCallback(() => {

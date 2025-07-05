@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import React, { useState } from 'react';
@@ -11,30 +10,15 @@ import {
   CheckCircle,
   Clock,
   Target,
-  TrendingUp,
   Bell,
   Settings
 } from 'lucide-react';
 import { ResponsiveContainer, PageSection } from '@/components/ui/responsive-container';
-import { ProjectCollaboration } from '@/components/projecta/Collaboration/project-collaboration';
-import { ActivityFeed } from '@/components/projecta/Activity/activity-feed';
-import { NotificationCenter } from '@/components/projecta/Notification/notification-center';
+import { GenericCollaboration } from '@/components/projecta/Collaboration/generic-collaboration';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useTaskCollaboration } from '@/hooks/useTaskCollaboration';
-import { cn } from '@/lib/utils';
 
-import { Project } from '@/types/project';
-import { TaskCollaboration } from '@/components/projecta/Collaboration/task-collaboration';
-import { TaskCardWithPermissions } from '@/components/ui/task-card-with-permissions';
-
-// Mock data para demonstração
-const mockProject: Project & {
-  collaboration: {
-    comments: any[];
-    activities: any[];
-    permissions: any[];
-  };
-} = {
+// Mock data para demonstração  
+const mockProject = {
   id: 'project-1',
   title: 'Sistema de Gestão de Projetos',
   description: 'Desenvolvimento de uma plataforma completa para gestão de projetos colaborativos',
@@ -42,24 +26,9 @@ const mockProject: Project & {
   progress: 65,
   dueDate: '2025-08-15',
   team: [
-    {
-      id: '1',
-      name: 'Mario Salvador',
-      role: 'Project Manager',
-      avatar: 'https://github.com/mariosalvador.png'
-    },
-    {
-      id: '2',
-      name: 'Ana Silva',
-      role: 'Developer',
-      avatar: ''
-    },
-    {
-      id: '3',
-      name: 'João Santos',
-      role: 'Designer',
-      avatar: ''
-    }
+    { id: '1', name: 'Mario Salvador', role: 'Project Manager', avatar: 'https://github.com/mariosalvador.png' },
+    { id: '2', name: 'Ana Silva', role: 'Developer', avatar: '' },
+    { id: '3', name: 'João Santos', role: 'Designer', avatar: '' }
   ],
   tasks: [
     {
@@ -89,63 +58,22 @@ const mockProject: Project & {
       dueDate: '2025-07-15',
       priority: 'medium' as const
     }
-  ],
-  collaboration: {
-    comments: [],
-    activities: [],
-    permissions: []
-  }
+  ]
 };
 
 export default function CollaborationPage() {
-  const { currentUser, hasPermission } = usePermissions();
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'project' | 'tasks' | 'activity' | 'notifications'>('project');
-
-  // Hook de colaboração para tarefa selecionada
-  const taskCollaboration = useTaskCollaboration({
-    projectId: mockProject.id,
-    taskId: selectedTaskId || 'task-1'
-  });
+  const { hasPermission } = usePermissions();
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>('task-1');
+  const [activeView, setActiveView] = useState<'project' | 'tasks' | 'activity'>('project');
 
   const canEdit = hasPermission('project', 'update');
-  const canAssign = hasPermission('project', 'assign');
 
   // Estatísticas do projeto
-  const totalTasks = mockProject.tasks.length;
   const completedTasks = mockProject.tasks.filter(task => task.status === 'completed').length;
   const activeTasks = mockProject.tasks.filter(task => task.status === 'active').length;
-  const pendingTasks = mockProject.tasks.filter(task => task.status === 'pending').length;
 
-  const handleTaskStatusChange = (taskId: string, newStatus: 'completed' | 'active' | 'pending') => {
-    console.log(`Mudando status da tarefa ${taskId} para ${newStatus}`);
-    // Aqui você implementaria a lógica real de atualização
-  };
-
-  const handleTaskAssign = (taskId: string, userId: string) => {
-    console.log(`Atribuindo tarefa ${taskId} para usuário ${userId}`);
-    // Aqui você implementaria a lógica real de atribuição
-  };
-
-  const handleProjectUpdate = (projectId: string, updates: any) => {
-    console.log(`Atualizando projeto ${projectId}:`, updates);
-    // Aqui você implementaria a lógica real de atualização do projeto
-  };
-
-  const handleAddMember = (projectId: string, userId: string, role: string) => {
-    console.log(`Adicionando membro ${userId} com role ${role} ao projeto ${projectId}`);
-    // Aqui você implementaria a lógica real de adição de membro
-  };
-
-  const handleRemoveMember = (projectId: string, userId: string) => {
-    console.log(`Removendo membro ${userId} do projeto ${projectId}`);
-    // Aqui você implementaria a lógica real de remoção de membro
-  };
-
-  const handleCreateTask = (projectId: string, task: any) => {
-    console.log(`Criando nova tarefa no projeto ${projectId}:`, task);
-    // Aqui você implementaria a lógica real de criação de tarefa
-  };
+  // IDs dos membros do projeto
+  const projectMemberIds = mockProject.team.map(member => member.id);
 
   return (
     <ResponsiveContainer>
@@ -153,7 +81,7 @@ export default function CollaborationPage() {
         {/* Header da página */}
         <PageSection
           title="Colaboração do Projeto"
-          description="Gerencie a colaboração entre membros da equipe, comentários e atividades"
+          description="Sistema genérico de colaboração para projetos e tarefas"
           action={
             <div className="flex gap-2">
               <Button variant="outline" size="sm">
@@ -223,7 +151,7 @@ export default function CollaborationPage() {
 
         {/* Navegação Principal */}
         <Tabs value={activeView} onValueChange={(value) => setActiveView(value as typeof activeView)}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="project" className="flex items-center gap-2">
               <Target className="h-4 w-4" />
               Projeto
@@ -236,20 +164,15 @@ export default function CollaborationPage() {
               <Activity className="h-4 w-4" />
               Atividades
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notificações
-            </TabsTrigger>
           </TabsList>
 
           {/* Colaboração do Projeto */}
           <TabsContent value="project" className="space-y-6">
-            <ProjectCollaboration
-              project={mockProject}
-              onProjectUpdate={handleProjectUpdate}
-              onAddMember={handleAddMember}
-              onRemoveMember={handleRemoveMember}
-              onCreateTask={handleCreateTask}
+            <GenericCollaboration
+              contextId={mockProject.id}
+              contextType="project"
+              contextTitle={mockProject.title}
+              membersIds={projectMemberIds}
             />
           </TabsContent>
 
@@ -259,28 +182,27 @@ export default function CollaborationPage() {
               {/* Lista de Tarefas */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5" />
-                    Tarefas do Projeto
-                  </CardTitle>
+                  <CardTitle>Tarefas do Projeto</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3">
                   {mockProject.tasks.map((task) => (
                     <div
                       key={task.id}
-                      className={cn(
-                        "p-4 border rounded-lg cursor-pointer transition-colors",
-                        selectedTaskId === task.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                      )}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedTaskId === task.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-muted/50'
+                        }`}
                       onClick={() => setSelectedTaskId(task.id)}
                     >
-                      <TaskCardWithPermissions
-                        task={task}
-                        onStatusChange={handleTaskStatusChange}
-                        onAssign={handleTaskAssign}
-                        projectTitle={mockProject.title}
-                        className="border-0 shadow-none p-0"
-                      />
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">{task.title}</h4>
+                        <span className={`px-2 py-1 rounded text-xs ${task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            task.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                              'bg-yellow-100 text-yellow-800'
+                          }`}>
+                          {task.status === 'completed' ? 'Concluída' :
+                            task.status === 'active' ? 'Ativa' : 'Pendente'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
                     </div>
                   ))}
                 </CardContent>
@@ -289,57 +211,31 @@ export default function CollaborationPage() {
               {/* Colaboração da Tarefa Selecionada */}
               {selectedTaskId && (
                 <div>
-                  <TaskCollaboration
-                    task={mockProject.tasks.find(t => t.id === selectedTaskId) as any}
-                    projectId={mockProject.id}
-                    onTaskUpdate={(taskId, updates) => {
-                      if (updates.status) {
-                        handleTaskStatusChange(taskId, updates.status);
-                      }
-                    }}
-                    onAssignUser={handleTaskAssign}
-                    onUnassignUser={(taskId, userId) => {
-                      console.log(`Removendo atribuição da tarefa ${taskId} do usuário ${userId}`);
-                    }}
-                    onUpdateWatchers={(taskId, watchers) => {
-                      console.log(`Atualizando observadores da tarefa ${taskId}:`, watchers);
-                    }}
+                  <GenericCollaboration
+                    contextId={selectedTaskId}
+                    contextType="task"
+                    contextTitle={mockProject.tasks.find(t => t.id === selectedTaskId)?.title || 'Tarefa'}
+                    membersIds={mockProject.tasks.find(t => t.id === selectedTaskId)?.assignees || []}
                   />
                 </div>
               )}
             </div>
           </TabsContent>
 
-          {/* Feed de Atividades */}
+          {/* Atividades Gerais */}
           <TabsContent value="activity" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Atividades Recentes
-                </CardTitle>
+                <CardTitle>Feed de Atividades</CardTitle>
               </CardHeader>
               <CardContent>
-                <ActivityFeed
-                  projectId={mockProject.id}
-                  showFilters={true}
-                  maxItems={10}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Centro de Notificações */}
-          <TabsContent value="notifications" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Centro de Notificações
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <NotificationCenter />
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhuma atividade recente</h3>
+                  <p className="text-muted-foreground">
+                    As atividades de colaboração aparecerão aqui conforme os membros interagem.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

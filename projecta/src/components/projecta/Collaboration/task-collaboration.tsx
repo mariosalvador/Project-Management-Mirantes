@@ -65,7 +65,6 @@ export function TaskCollaboration({
 
   const canEdit = hasPermission('task', 'update');
   const canAssign = hasPermission('task', 'assign');
-  const canComment = hasPermission('task', 'comment');
 
   // Usuários atribuídos à tarefa
   const assignedUsers = users.filter(user =>
@@ -88,9 +87,9 @@ export function TaskCollaboration({
       logTaskAssigned({
         taskId: task.id,
         taskTitle: task.title,
-        assignedUserId: userId,
-        projectId: projectId
-      });
+        projectId: projectId,
+        projectTitle: 'Projeto' // Em uma app real, isso viria dos dados do projeto
+      }, users.find(u => u.id === userId)?.name || 'Usuário');
     }
     setIsAssigning(false);
   };
@@ -120,8 +119,8 @@ export function TaskCollaboration({
       logTaskUpdated({
         taskId: task.id,
         taskTitle: task.title,
-        changes: { status: newStatus },
-        projectId: projectId
+        projectId: projectId,
+        projectTitle: 'Projeto' // Em uma app real, isso viria dos dados do projeto
       });
     }
   };

@@ -71,7 +71,7 @@ export function Sidebar({ className }: SidebarProps) {
         isMobile
           ? "w-80" // Mobile: sempre largura total quando visível
           : isCollapsed
-            ? "w-16" // Colapsado: largura mínima
+            ? "w-20" // Colapsado: largura mínima
             : isTablet
               ? "w-60" // Tablet: largura reduzida
               : "w-80", // Desktop/Laptop: largura completa
