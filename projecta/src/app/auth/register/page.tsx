@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { LogoProject } from "../../../../public/assets/logo"
+import { signUp } from "@/Api/services/auth"
 
 export default function RegisterPage() {
   const [name, setName] = useState("")
@@ -40,10 +41,11 @@ export default function RegisterPage() {
     }
 
     try {
-      const success = await true;
+      const success = await signUp(email,password);
 
       if (success) {
-        router.push("/")
+      console.log("Conta criada com sucesso:", success)
+      router.push("/apk")
       } else {
         setError("Este email já está em uso")
       }
