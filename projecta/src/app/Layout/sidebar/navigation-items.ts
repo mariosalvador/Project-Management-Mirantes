@@ -1,4 +1,4 @@
-import { FolderOpen, Home, Users, Bell, Activity } from "lucide-react";
+import { FolderOpen, Home, Users, Bell, Activity, MessageCircle } from "lucide-react";
 interface Project {
   id: string;
   title: string;
@@ -20,6 +20,12 @@ export const getNavigation = (pathname: string, projects: Project[] | undefined)
     icon: FolderOpen,
     current: pathname.startsWith("/apk/project"),
     badge: projects?.length || 0,
+  },
+  {
+    name: "Colaboração",
+    href: "/apk/collaboration/",
+    icon: MessageCircle,
+    current: pathname.startsWith("/apk/collaboration"),
   },
   {
     name: "Notificações",

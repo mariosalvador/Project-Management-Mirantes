@@ -116,7 +116,7 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
   const [filter, setFilter] = useState<NotificationFilter>('all');
- 
+
   const [isLoading,] = useState(false);
 
   // Filtrar notificações baseado no filtro atual
@@ -289,6 +289,31 @@ export function useNotifications() {
     });
   }, [settings.projectAssignments.enabled, settings.userId, createNotification]);
 
+  // Adicionar notificação para um usuário específico
+  const addNotificationForUser = useCallback((userId: string, notificationData: {
+    type: Notification['type'];
+    title: string;
+    message: string;
+    projectId: string;
+    taskId?: string;
+    priority: Notification['priority'];
+    actionUrl?: string;
+    metadata?: Record<string, unknown>;
+  }) => {
+    createNotification({
+      type: notificationData.type,
+      title: notificationData.title,
+      message: notificationData.message,
+      userId,
+      projectId: notificationData.projectId,
+      taskId: notificationData.taskId,
+      isRead: false,
+      priority: notificationData.priority,
+      actionUrl: notificationData.actionUrl || `/apk/project/${notificationData.projectId}${notificationData.taskId ? '/tasks?taskId=' + notificationData.taskId : ''}`,
+      metadata: notificationData.metadata
+    });
+  }, [createNotification]);
+
   // Verificar prazos automaticamente (simula um job em background)
   useEffect(() => {
     if (!settings.taskDeadlines.enabled) return;
@@ -322,6 +347,7 @@ export function useNotifications() {
     deleteReadNotifications,
     updateSettings,
     // Funções para criar notificações
+    addNotificationForUser,
     notifyTaskStatusChange,
     notifyTaskAssignment,
     notifyTaskDeadline,
