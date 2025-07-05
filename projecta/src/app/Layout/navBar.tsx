@@ -56,9 +56,11 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-5">
           {/* Notification Center */}
+          <div className="relative">
           <NotificationCenter />
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

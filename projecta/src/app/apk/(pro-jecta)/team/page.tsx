@@ -185,7 +185,7 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="container">
+    <div className="container space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

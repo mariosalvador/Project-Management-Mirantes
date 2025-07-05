@@ -14,7 +14,6 @@ import {
   Trash2
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
-import { NotificationCenter } from './notification-center';
 import { useState } from 'react';
 import { NotificationSettingsPanel } from './notification-settings';
 
@@ -251,9 +250,9 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
         </div>
       )}
 
-      {activeTab === 'center' && (
+      {/* {activeTab === 'center' && (
         <NotificationCenter />
-      )}
+      )} */}
 
       {activeTab === 'settings' && (
         <NotificationSettingsPanel />

@@ -18,9 +18,6 @@ import {
   ChevronDown,
   ChevronRight,
   Search,
-  Star,
-  Archive,
-  Trash2,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
@@ -214,7 +211,7 @@ export function Sidebar({ className }: SidebarProps) {
             </CollapsibleContent>
           </Collapsible>
 
-          {isCollapsed && (
+          {/* {isCollapsed && (
             <div className="space-y-1">
               <Button variant="ghost" size="icon" className="w-full">
                 <Star className="h-4 w-4" />
@@ -226,7 +223,7 @@ export function Sidebar({ className }: SidebarProps) {
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
-          )}
+          )} */}
         </div>
       </ScrollArea>
 
