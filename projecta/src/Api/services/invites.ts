@@ -103,7 +103,7 @@ const createInviteNotificationIfUserExists = async (email: string, invitation: T
           isRead: false,
           priority: 'medium',
           createdAt: new Date().toISOString(),
-          actionUrl: `/apk/notifications`,
+          actionUrl: `/apk/team/invites/${invitation.id}`,
           metadata: {
             invitedBy: invitation.invitedByName,
             role: invitation.role,
@@ -484,7 +484,7 @@ export const checkPendingInvitesOnLogin = async (email: string, userId: string, 
           isRead: false,
           priority: 'medium',
           createdAt: new Date().toISOString(),
-          actionUrl: `/apk/notifications`,
+          actionUrl: `/apk/team/invites/${invite.id}`,
           metadata: {
             invitedBy: invite.invitedByName,
             role: invite.role,

@@ -49,7 +49,7 @@ export function GenericCollaboration({
     editComment,
     deleteComment,
     addReaction
-  } = useGenericCollaboration({ contextId, contextType });
+  } = useGenericCollaboration({ contextId, contextType, contextTitle });
 
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState<string | null>(null);

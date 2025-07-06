@@ -6,9 +6,10 @@ import {
   Trash2,
   ExternalLink
 } from 'lucide-react';
-import {  NotificationItemProps } from '@/types/notification';
+import { NotificationItemProps } from '@/types/notification';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 
 export function NotificationItem({
@@ -20,17 +21,31 @@ export function NotificationItem({
   getPriorityColor
 }: NotificationItemProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const router = useRouter();
+
+  const handleNotificationClick = () => {
+    // Marcar como lida se não estiver lida
+    if (!notification.isRead) {
+      onMarkAsRead(notification.id);
+    }
+
+    // Redirecionar para a URL de ação se existir
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
+    }
+  };
 
   return (
     <div
       className={cn(
         'p-3 hover:bg-muted/50 transition-colors border-l-4 cursor-pointer group',
         getPriorityColor(notification.priority),
-        !notification.isRead && 'bg-accent/20'
+        !notification.isRead && 'bg-accent/20',
+        notification.type === 'team_invitation' && 'hover:bg-blue-50 border-l-blue-500'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => !notification.isRead && onMarkAsRead(notification.id)}
+      onClick={handleNotificationClick}
     >
       <div className="flex items-start gap-3">
         {/* Icon */}
@@ -51,6 +66,13 @@ export function NotificationItem({
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {notification.message}
               </p>
+
+              {/* Indicador especial para convites */}
+              {notification.type === 'team_invitation' && (
+                <p className="text-xs text-blue-600 mt-1 font-medium">
+                  👆 Clique para responder ao convite
+                </p>
+              )}
 
               {/* Metadata */}
               <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
