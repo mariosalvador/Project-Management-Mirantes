@@ -17,14 +17,15 @@ import { cn } from '@/lib/utils';
 import { formatTimeAgo } from '@/utils/formatters';
 import { FileItem, FileManagerProps } from '@/types/file';
 import { formatFileSize, getFileIcon } from '@/utils/file-utils';
-import { mockFiles } from './mock';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 export function FileManager({ projectId, projectTitle, className }: FileManagerProps) {
-  const [files, setFiles] = useState<FileItem[]>(mockFiles);
-
+  const { user } = useAuth();
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Hook para logging de atividades
   const { logFileUploaded, logFileDeleted } = useActivityLogger();
 
@@ -38,7 +39,7 @@ export function FileManager({ projectId, projectTitle, className }: FileManagerP
         size: file.size,
         type: file.type,
         uploadedAt: new Date().toISOString(),
-        uploadedBy: 'Usuário Atual' // Seria obtido do contexto real
+        uploadedBy: user?.displayName || user?.email || 'Usuário Desconhecido'
       };
 
       setFiles(prev => [newFile, ...prev]);

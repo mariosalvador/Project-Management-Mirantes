@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useContext, createContext, ReactNode } from 'react';
+import { useState, useContext, createContext, ReactNode, useEffect } from 'react';
 import { User, UserRole, PermissionAction, DEFAULT_PERMISSIONS } from '../types/collaboration';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PermissionContextType {
   currentUser: User | null;
@@ -15,52 +16,30 @@ interface PermissionContextType {
 
 const PermissionContext = createContext<PermissionContextType | undefined>(undefined);
 
-// Mock de usuários para demonstração
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Mario Salvador',
-    email: 'mario@example.com',
-    avatar: 'https://github.com/mariosalvador.png',
-    role: 'admin',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    lastActive: new Date().toISOString(),
-    permissions: DEFAULT_PERMISSIONS.admin
-  },
-  {
-    id: '2',
-    name: 'Ana Silva',
-    email: 'ana@example.com',
-    role: 'manager',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    lastActive: new Date().toISOString(),
-    permissions: DEFAULT_PERMISSIONS.manager
-  },
-  {
-    id: '3',
-    name: 'João Santos',
-    email: 'joao@example.com',
-    role: 'member',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    permissions: DEFAULT_PERMISSIONS.member
-  },
-  {
-    id: '4',
-    name: 'Maria Costa',
-    email: 'maria@example.com',
-    role: 'viewer',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    permissions: DEFAULT_PERMISSIONS.viewer
-  }
-];
-
 export function PermissionProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(mockUsers[0]); // Admin por padrão
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const { user, userData } = useAuth();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+
+  // Sincronizar com dados de autenticação
+  useEffect(() => {
+    if (user && userData) {
+      const authUser: User = {
+        id: user.uid,
+        name: userData.displayName || user.displayName || 'Usuário',
+        email: userData.email || user.email || '',
+        avatar: userData.photoURL || user.photoURL || undefined,
+        role: 'admin', // Por padrão, primeiro usuário é admin - isso deveria vir do banco
+        isActive: true,
+        createdAt: userData.createdAt?.toISOString() || new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        permissions: DEFAULT_PERMISSIONS.admin
+      };
+
+      setCurrentUser(authUser);
+      setUsers([authUser]); // Por enquanto apenas o usuário logado
+    }
+  }, [user, userData]);
 
   const hasPermission = (
     resource: string,

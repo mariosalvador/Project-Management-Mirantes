@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,13 +29,37 @@ export function NotificationCenter() {
   const {
     notifications,
     stats,
-    filter,
-    setFilter,
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    deleteReadNotifications
   } = useNotifications();
+
+  // Estado local para filtro simples
+  const [currentFilter, setCurrentFilter] = useState<NotificationFilter>('all');
+
+  // Filtrar notificações localmente
+  const filteredNotifications = notifications.filter(notification => {
+    switch (currentFilter) {
+      case 'unread':
+        return !notification.isRead;
+      case 'urgent':
+        return notification.priority === 'urgent' || notification.priority === 'high';
+      case 'task_related':
+        return ['task_deadline', 'task_assignment', 'task_status_change', 'overdue_task'].includes(notification.type);
+      case 'project_related':
+        return ['project_assignment', 'project_update'].includes(notification.type);
+      default:
+        return true;
+    }
+  });
+
+  // Função para deletar notificações lidas
+  const deleteReadNotifications = () => {
+    const readNotifications = notifications.filter(n => n.isRead);
+    readNotifications.forEach(notification => {
+      deleteNotification(notification.id);
+    });
+  };
 
   const filterButtons: Array<{
     key: NotificationFilter;
@@ -88,9 +112,9 @@ export function NotificationCenter() {
                 return (
                   <Button
                     key={filterBtn.key}
-                    variant={filter === filterBtn.key ? 'default' : 'ghost'}
+                    variant={currentFilter === filterBtn.key ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setFilter(filterBtn.key)}
+                    onClick={() => setCurrentFilter(filterBtn.key)}
                     className="h-7 text-xs"
                   >
                     <Icon className="h-3 w-3 mr-1" />
@@ -105,7 +129,7 @@ export function NotificationCenter() {
               })}
             </div>
 
-            {notifications.length > 0 && (
+            {filteredNotifications.length > 0 && (
               <div className="flex items-center gap-2 mt-3">
                 <Button
                   variant="ghost"
@@ -131,19 +155,19 @@ export function NotificationCenter() {
             <Separator />
 
             <ScrollArea className="h-96">
-              {notifications.length === 0 ? (
+              {filteredNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Bell className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
                   <p className="text-sm text-muted-foreground">
-                    {filter === 'all'
+                    {currentFilter === 'all'
                       ? 'Nenhuma notificação encontrada'
-                      : `Nenhuma notificação ${filter === 'unread' ? 'não lida' : 'do tipo selecionado'}`
+                      : `Nenhuma notificação ${currentFilter === 'unread' ? 'não lida' : 'do tipo selecionado'}`
                     }
                   </p>
                 </div>
               ) : (
                 <div className="divide-y">
-                  {notifications.map((notification) => (
+                  {filteredNotifications.map((notification) => (
                     <NotificationItem
                       key={notification.id}
                       notification={notification}

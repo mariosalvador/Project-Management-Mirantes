@@ -38,7 +38,7 @@ export function NotificationWidget({ className, compact = false }: NotificationW
             </div>
             {stats.needsAttention && (
               <Badge variant="destructive" className="h-5 text-xs">
-                {stats.urgent + stats.overdue}
+                {stats.urgent + stats.byType.overdue_task}
               </Badge>
             )}
           </CardTitle>
@@ -101,7 +101,7 @@ export function NotificationWidget({ className, compact = false }: NotificationW
             )}
             {stats.hasOverdueNotifications && (
               <Badge variant="destructive">
-                {stats.overdue} vencida{stats.overdue !== 1 ? 's' : ''}
+                {stats.byType.overdue_task} vencida{stats.byType.overdue_task !== 1 ? 's' : ''}
               </Badge>
             )}
           </div>
@@ -202,7 +202,7 @@ export function NotificationIndicator({ className }: { className?: string }) {
         <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse" />
       </div>
       <span className="text-xs text-muted-foreground">
-        {stats.urgent + stats.overdue} urgente{stats.urgent + stats.overdue !== 1 ? 's' : ''}
+        {stats.urgent + stats.byType.overdue_task} urgente{stats.urgent + stats.byType.overdue_task !== 1 ? 's' : ''}
       </span>
     </div>
   );

@@ -1,18 +1,31 @@
 "use client"
 
-import { useProjects } from "../Layout/project-context"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useEffect } from "react"
+import { useProjects } from "@/hooks/useProjects"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
-import { Clock, CheckCircle, AlertCircle, Pause, TrendingUp, Plus } from "lucide-react"
+import { Plus, Loader2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { getStatusColor } from "@/utils/tasksFormatters"
 import { ProtectedRoute } from "@/components/auth/RouteProtection"
 import { UserInfo } from "@/components/auth/UserComponents"
+import { DashboardStats } from "@/components/dashboard/DashboardStats"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getStatusIcon } from "@/utils/notification"
+import { Badge } from "@/components/ui/badge"
+import { getStatusColor } from "@/utils/tasksFormatters"
 
 export default function DashboardPage() {
-  const { projects } = useProjects()
+  const { user } = useAuth()
+  const { projects, loading, error, loadProjects } = useProjects()
 
+  // Carregar projetos quando o usuário estiver autenticado
+  useEffect(() => {
+    if (user?.uid) {
+      loadProjects()
+    }
+  }, [user?.uid, loadProjects])
+
+  // Calcular estatísticas dos projetos
   const stats = {
     total: projects.length,
     active: projects.filter(p => p.status === "active").length,
@@ -21,23 +34,57 @@ export default function DashboardPage() {
     onHold: projects.filter(p => p.status === "on-hold").length,
   }
 
+  // Estatísticas adicionais baseadas nos dados reais
+  const totalTasks = projects.reduce((acc, project) => acc + (project.tasks?.length || 0), 0)
+  const completedTasks = projects.reduce((acc, project) =>
+    acc + (project.tasks?.filter(task => task.status === 'completed').length || 0), 0
+  )
+  const totalTeamMembers = projects.reduce((acc, project) => acc + (project.teamMembers || 0), 0)
+  const avgProgress = projects.length > 0
+    ? Math.round(projects.reduce((acc, project) => acc + (project.progress || 0), 0) / projects.length)
+    : 0
+
+  // Projetos recentes ordenados por data de atualização
   const recentProjects = projects
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .filter(p => p.updatedAt)  
+    .sort((a, b) => {
+      const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+      const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+      return dateB - dateA
+    })
     .slice(0, 3)
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Clock className="h-4 w-4 text-blue-500" />
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "planning":
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      case "on-hold":
-        return <Pause className="h-4 w-4 text-gray-500" />
-      default:
-        return <Clock className="h-4 w-4" />
-    }
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <div className="container">
+          <div className="flex items-center justify-center min-h-96">
+            <div className="flex flex-col items-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <p className="text-muted-foreground">Carregando projetos...</p>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  }
+
+  if (error) {
+    return (
+      <ProtectedRoute>
+        <div className="container">
+          <div className="flex items-center justify-center min-h-96">
+            <div className="flex flex-col items-center space-y-4">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+              <p className="text-red-500">Erro ao carregar projetos: {error}</p>
+              <Button onClick={loadProjects} variant="outline">
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
   }
 
   return (
@@ -56,60 +103,13 @@ export default function DashboardPage() {
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Projetos</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.active} ativos
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Projetos Ativos</CardTitle>
-              <Clock className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.active}</div>
-              <p className="text-xs text-muted-foreground">
-                Em andamento
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Concluídos</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-              <p className="text-xs text-muted-foreground">
-                Finalizados
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Em Planejamento</CardTitle>
-              <AlertCircle className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.planning}</div>
-              <p className="text-xs text-muted-foreground">
-                Sendo planejados
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <DashboardStats
+          stats={stats}
+          totalTasks={totalTasks}
+          completedTasks={completedTasks}
+          totalTeamMembers={totalTeamMembers}
+          avgProgress={avgProgress}
+        />
 
         {/* Grid com Recent Projects e User Info */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -125,36 +125,42 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               {recentProjects.length > 0 ? (
-                <Link href={`/apk/project/${recentProjects[0].title}`} className="space-y-4">
+                <div className="space-y-4">
                   {recentProjects.map((project) => (
-                    <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        {getStatusIcon(project.status)}
-                        <div>
-                          <h4 className="font-medium">{project.title}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {project.description}
-                          </p>
+                    <Link
+                      key={project.id}
+                      href={`/apk/project/${project.title}`}
+                      className="block"
+                    >
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <div className="flex items-center space-x-4">
+                          {getStatusIcon(project.status)}
+                          <div>
+                            <h4 className="font-medium">{project.title}</h4>
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {project.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <Badge className={getStatusColor(project.status)}>
+                            {project.status === "active" ? "Ativo" :
+                              project.status === "completed" ? "Concluído" :
+                                project.status === "planning" ? "Planejamento" : "Pausado"}
+                          </Badge>
+                          <div className="text-sm text-muted-foreground">
+                            {project.tasks?.length || 0} tarefas
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge className={getStatusColor(project.status)}>
-                          {project.status === "active" ? "Ativo" :
-                            project.status === "completed" ? "Concluído" :
-                              project.status === "planning" ? "Planejamento" : "Pausado"}
-                        </Badge>
-                        <div className="text-sm text-muted-foreground">
-                          {project.tasks.length} tarefas
-                        </div>
-                      </div>
-                    </div>
+                    </Link>
                   ))}
-                </Link>
+                </div>
               ) : (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">Nenhum projeto encontrado</p>
                   <Button className="mt-4" asChild>
-                    <Link href="/apk/project/new">
+                    <Link href="/apk/project/create">
                       <Plus className="h-4 w-4 mr-2" />
                       Criar primeiro projeto
                     </Link>

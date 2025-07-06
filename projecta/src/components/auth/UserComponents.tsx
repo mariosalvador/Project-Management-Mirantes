@@ -84,9 +84,6 @@ export const UserInfo = () => {
       <h3 className="font-semibold mb-2">Informações do Usuário</h3>
       <div className="space-y-2 text-sm">
         <div>
-          <span className="font-medium">Nome:</span> {userData.displayName || 'Não informado'}
-        </div>
-        <div>
           <span className="font-medium">Email:</span> {userData.email}
         </div>
         <div>

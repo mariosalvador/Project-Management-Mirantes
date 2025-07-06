@@ -13,11 +13,9 @@ import { Separator } from "@/components/ui/separator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   FolderOpen,
-  Settings,
   Plus,
   ChevronDown,
   ChevronRight,
-  Search,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react"
@@ -66,9 +64,14 @@ export function Sidebar({ className }: SidebarProps) {
     .slice(0, 2)
 
   const recentProjects = projects
-    ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5) || []
+    ?.sort(
+      (a, b) =>
+        new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime()
+    )
+    .slice(0, 4) || []
 
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //@ts-ignore
   const navigation = getNavigation(pathname, projects)
 
   return (
@@ -113,29 +116,20 @@ export function Sidebar({ className }: SidebarProps) {
           {!isCollapsed && (
             <div className="space-y-2">
               <Button asChild className="w-full justify-start text-sm">
-                <Link href="/apk/project/new">
+                <Link href="/apk/project/create">
                   <Plus className="h-4 w-4 mr-2" />
                   {isMobile || !isTablet ? "Novo Projeto" : "Novo"}
                 </Link>
               </Button>
-              <div className={""}>
-                <Button variant="outline" size="sm" className="justify-start bg-transparent w-full">
-                  <Search className="h-4 w-4 mr-1" />
-                  {!isTablet && "Buscar"}
-                </Button>
-              </div>
             </div>
           )}
 
           {isCollapsed && (
             <div className="space-y-2">
               <Button asChild size="icon" className="w-full">
-                <Link href="/apk/project/new">
+                <Link href="/apk/project/create">
                   <Plus className="h-4 w-4" />
                 </Link>
-              </Button>
-              <Button variant="outline" size="icon" className="w-full bg-transparent">
-                <Search className="h-4 w-4" />
               </Button>
             </div>
           )}
@@ -209,7 +203,7 @@ export function Sidebar({ className }: SidebarProps) {
                                       ? "Planejamento"
                                       : "Pausado"}
                               </Badge>
-                              <span className="text-xs text-muted-foreground">{project.tasks.length} tarefas</span>
+                              <span className="text-xs text-muted-foreground">{project.tasks?.length ?? 0} tarefas</span>
                             </div>
                           </div>
                         </div>
@@ -228,10 +222,6 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="border-t p-4">
         {!isCollapsed ? (
           <div className="space-y-3">
-            <Button variant="ghost" className="w-full justify-start" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Configurações
-            </Button>
             <div className="flex items-center space-x-2">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={photoURL || ''} alt={displayName} />
@@ -249,9 +239,6 @@ export function Sidebar({ className }: SidebarProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            <Button variant="ghost" size="icon" className="w-full">
-              <Settings className="h-4 w-4" />
-            </Button>
             <Button variant="ghost" size="icon" className="w-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={photoURL || ''} alt={displayName} />

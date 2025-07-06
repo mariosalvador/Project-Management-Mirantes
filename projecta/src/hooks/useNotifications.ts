@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { NotificationFilterOptions, NotificationStats } from '@/types/notification';
+import { NotificationFilterOptions, NotificationStats, NotificationSettings } from '@/types/notification';
 import { useAuth } from '@/contexts/AuthContext';
+import { Task } from '@/types/project';
 import {
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   deleteNotification,
   getUnreadNotificationsCount,
-  NotificationData
+  NotificationData,
+  createNotification
 } from '@/Api/services/notifications';
 
 export const useNotifications = () => {
@@ -20,6 +22,32 @@ export const useNotifications = () => {
     priority: null,
     isRead: null,
     dateRange: null
+  });
+
+  // Configurações de notificação padrão
+  const [settings, setSettings] = useState<NotificationSettings>({
+    userId: user?.uid || '',
+    emailNotifications: true,
+    pushNotifications: true,
+    inAppNotifications: true,
+    taskDeadlines: {
+      enabled: true,
+      daysBefore: 2
+    },
+    taskStatusChanges: {
+      enabled: true,
+      onlyMyTasks: false
+    },
+    taskAssignments: {
+      enabled: true
+    },
+    projectAssignments: {
+      enabled: true
+    },
+    overdueReminders: {
+      enabled: true,
+      frequency: 'daily'
+    }
   });
 
   // Buscar todas as notificações
@@ -37,7 +65,67 @@ export const useNotifications = () => {
     }
   }, [user?.uid]);
 
-  // Buscar contador de não lidas
+  // Função para atualizar configurações
+  const updateSettings = useCallback((newSettings: Partial<NotificationSettings>) => {
+    setSettings(prev => ({
+      ...prev,
+      ...newSettings
+    }));
+    // TODO: Salvar no Firestore
+  }, []);
+
+  // Funções de notificação
+  const notifyTaskDeadline = useCallback(async (task: Task, daysUntil: number, projectTitle: string) => {
+    if (!user?.uid || !settings.taskDeadlines.enabled) return;
+
+    try {
+      await createNotification({
+        type: 'task_deadline',
+        title: `Prazo se aproximando: ${task.title}`,
+        message: `O prazo da tarefa "${task.title}" no projeto "${projectTitle}" vence em ${daysUntil} dia${daysUntil !== 1 ? 's' : ''}`,
+        userId: user.uid,
+        projectId: task.assignees?.[0] || '',
+        taskId: task.id,
+        isRead: false,
+        priority: daysUntil <= 1 ? 'urgent' : 'high',
+        metadata: {
+          daysUntilDue: daysUntil,
+          projectTitle
+        }
+      });
+
+      // Refresh notifications
+      fetchNotifications();
+    } catch (error) {
+      console.error('Erro ao criar notificação de prazo:', error);
+    }
+  }, [user?.uid, settings.taskDeadlines.enabled, fetchNotifications]);
+
+  const notifyOverdueTask = useCallback(async (task: Task, daysOverdue: number, projectTitle: string) => {
+    if (!user?.uid || !settings.overdueReminders.enabled) return;
+
+    try {
+      await createNotification({
+        type: 'overdue_task',
+        title: `Tarefa vencida: ${task.title}`,
+        message: `A tarefa "${task.title}" no projeto "${projectTitle}" está vencida há ${daysOverdue} dia${daysOverdue !== 1 ? 's' : ''}`,
+        userId: user.uid,
+        projectId: task.assignees?.[0] || '',
+        taskId: task.id,
+        isRead: false,
+        priority: 'urgent',
+        metadata: {
+          daysUntilDue: -daysOverdue,
+          projectTitle
+        }
+      });
+
+      // Refresh notifications
+      fetchNotifications();
+    } catch (error) {
+      console.error('Erro ao criar notificação de vencimento:', error);
+    }
+  }, [user?.uid, settings.overdueReminders.enabled, fetchNotifications]);
   const fetchUnreadCount = useCallback(async () => {
     if (!user?.uid) return;
 
@@ -185,11 +273,15 @@ export const useNotifications = () => {
     isLoading,
     filter,
     stats,
+    settings,
     setFilter,
     markAsRead,
     markAllAsRead,
     deleteNotification: deleteNotif,
     refreshNotifications: fetchNotifications,
-    refreshUnreadCount: fetchUnreadCount
+    refreshUnreadCount: fetchUnreadCount,
+    updateSettings,
+    notifyTaskDeadline,
+    notifyOverdueTask
   };
 };

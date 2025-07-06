@@ -3,7 +3,8 @@ import { Task, Project } from '@/types/project';
 import { useNotifications } from './useNotifications';
 
 export function useTaskDeadlineMonitor(tasks: Task[], project: Project | undefined) {
-  const { notifyTaskDeadline, notifyOverdueTask } = useNotifications();
+  // TODO: Implementar funções de notificação no useNotifications
+  // const { notifyTaskDeadline, notifyOverdueTask } = useNotifications();
 
   useEffect(() => {
     if (!tasks || !project) return;
@@ -24,11 +25,13 @@ export function useTaskDeadlineMonitor(tasks: Task[], project: Project | undefin
         // Verificar se a tarefa está vencida
         if (diffDays < 0) {
           const daysOverdue = Math.abs(diffDays);
-          notifyOverdueTask(task, daysOverdue, project.title);
+          console.log(`Tarefa vencida: ${task.title} - ${daysOverdue} dias`);
+          // notifyOverdueTask(task, daysOverdue, project.title);
         }
         // Verificar se o prazo está se aproximando
         else if (diffDays <= 3 && diffDays >= 0) {
-          notifyTaskDeadline(task, diffDays, project.title);
+          console.log(`Prazo se aproximando: ${task.title} - ${diffDays} dias`);
+          // notifyTaskDeadline(task, diffDays, project.title);
         }
       });
     };
@@ -40,16 +43,17 @@ export function useTaskDeadlineMonitor(tasks: Task[], project: Project | undefin
     const interval = setInterval(checkTaskDeadlines, 3600000); // 1 hora
 
     return () => clearInterval(interval);
-  }, [tasks, project, notifyTaskDeadline, notifyOverdueTask]);
+  }, [tasks, project]);
 }
 
 // Hook para monitorar mudanças em tempo real
 export function useRealTimeNotifications() {
-  const {
-    notifyTaskAssignment,
-    notifyProjectAssignment,
-    notifyTaskStatusChange
-  } = useNotifications();
+  // TODO: Implementar funções de notificação no useNotifications
+  // const {
+  //   notifyTaskAssignment,
+  //   notifyProjectAssignment,
+  //   notifyTaskStatusChange
+  // } = useNotifications();
 
   // Simular recebimento de notificações em tempo real (WebSocket)
   useEffect(() => {
@@ -68,9 +72,10 @@ export function useRealTimeNotifications() {
   }, []);
 
   return {
-    notifyTaskAssignment,
-    notifyProjectAssignment,
-    notifyTaskStatusChange
+    // TODO: Retornar funções reais quando implementadas
+    // notifyTaskAssignment,
+    // notifyProjectAssignment,
+    // notifyTaskStatusChange
   };
 }
 
@@ -81,7 +86,7 @@ export function useNotificationStats() {
   return {
     ...stats,
     hasUrgentNotifications: stats.urgent > 0,
-    hasOverdueNotifications: stats.overdue > 0,
-    needsAttention: stats.urgent > 0 || stats.overdue > 0
+    hasOverdueNotifications: stats.byType.overdue_task > 0,
+    needsAttention: stats.urgent > 0 || stats.byType.overdue_task > 0
   };
 }

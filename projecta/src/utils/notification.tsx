@@ -1,5 +1,5 @@
 import { Notification } from "@/types/notification";
-import { AlertTriangle, Bell, CheckCheck, Clock, FolderOpen, User } from "lucide-react";
+import { AlertCircle, AlertTriangle, Bell, CheckCheck, CheckCircle, Clock, FolderOpen, Pause, User } from "lucide-react";
 
 
 export const getNotificationIcon = (type: Notification['type']) => {
@@ -47,3 +47,18 @@ export const getPriorityStyle = (priority: string) => {
       return 'border-l-gray-300';
   }
 };
+
+export const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Clock className="h-4 w-4 text-blue-500" />
+      case "completed":
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "planning":
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />
+      case "on-hold":
+        return <Pause className="h-4 w-4 text-gray-500" />
+      default:
+        return <Clock className="h-4 w-4" />
+    }
+  }

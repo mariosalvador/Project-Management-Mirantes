@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useContext, createContext, ReactNode, useCallback } from 'react';
-import { Activity, ActivityType, ActivityData, ActivityFilter, ActivityGrouped, mockActivities } from '@/types/activity';
+import { Activity, ActivityType, ActivityData, ActivityFilter, ActivityGrouped } from '@/types/activity';
 import { usePermissions } from './usePermissions';
 
 interface ActivityContextType {
@@ -23,7 +23,7 @@ const ActivityContext = createContext<ActivityContextType | undefined>(undefined
 
 export function ActivityProvider({ children }: { children: ReactNode }) {
   const { currentUser } = usePermissions();
-  const [activities, setActivities] = useState<Activity[]>(mockActivities);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [filters, setFilters] = useState<ActivityFilter>({});
 
   // Filtrar atividades baseado nos filtros ativos

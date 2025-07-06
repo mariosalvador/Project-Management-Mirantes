@@ -6,7 +6,6 @@ import { Sidebar } from "./sidebar"
 import { Navbar } from "./navBar"
 import { useIsMobile } from "@/lib/use-media-query"
 import { NotificationToastProvider } from "@/components/projecta/Notification/notification-toast-provider"
-import { NotificationSimulator } from "@/components/projecta/Notification/notification-simulator"
 import { PermissionProvider } from "@/hooks/usePermissions"
 import { ActivityProvider } from "@/hooks/useActivity"
 
@@ -22,7 +21,6 @@ export default function LayoutWithSidebar({ children }: LayoutWithSidebarProps) 
     <PermissionProvider>
       <ActivityProvider>
         <NotificationToastProvider>
-          <NotificationSimulator />
           <div className="flex h-screen bg-background">
             {/* Sidebar Desktop */}
             {!isMobile && <Sidebar />}
