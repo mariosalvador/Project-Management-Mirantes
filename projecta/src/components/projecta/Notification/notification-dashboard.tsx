@@ -81,14 +81,6 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
             Visão Geral
           </Button>
           <Button
-            variant={activeTab === 'center' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveTab('center')}
-          >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            Notificações
-          </Button>
-          <Button
             variant={activeTab === 'settings' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('settings')}
@@ -237,11 +229,6 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
           </Card>
         </div>
       )}
-
-      {/* {activeTab === 'center' && (
-        <NotificationCenter />
-      )} */}
-
       {activeTab === 'settings' && (
         <NotificationSettingsPanel />
       )}

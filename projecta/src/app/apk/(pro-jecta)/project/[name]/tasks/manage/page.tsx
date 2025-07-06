@@ -56,7 +56,6 @@ export default function TaskManagePage() {
   const isEditing = !!taskId;
   const existingTask = project?.tasks?.find((t: Task) => t.id === taskId);
 
-  // Hook para logging de atividades
   const { logTaskCreated, logTaskUpdated } = useActivityLogger();
 
   const [formData, setFormData] = useState<TaskFormData>({
@@ -188,15 +187,12 @@ export default function TaskManagePage() {
         dependencies: formData.dependencies
       };
 
-      // Atualizar lista de tarefas no projeto
       const updatedTasks = isEditing
         ? (project.tasks || []).map(task => task.id === taskId ? taskData : task)
         : [...(project.tasks || []), taskData];
 
-      // Salvar no Firestore
       await updateProject(project.id, { tasks: updatedTasks });
 
-      // Registrar atividade no feed
       if (isEditing) {
         logTaskUpdated({
           taskId: taskData.id,

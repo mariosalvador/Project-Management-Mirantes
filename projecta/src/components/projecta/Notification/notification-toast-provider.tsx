@@ -12,8 +12,6 @@ interface NotificationToastProviderProps {
 export function NotificationToastProvider({ children }: NotificationToastProviderProps) {
   const { notifications } = useNotifications();
   const { showToast } = useToast();
-
-  // Rastrear as notificações já processadas
   const [processedNotifications, setProcessedNotifications] = React.useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -26,12 +24,10 @@ export function NotificationToastProvider({ children }: NotificationToastProvide
     );
 
     newNotifications.forEach(notification => {
-      // Mostrar toast para a nova notificação
       showToast(
         `${notification.title}: ${notification.message}`,
         getToastType(notification.priority)
       );
-
       // Marcar como processada
       setProcessedNotifications(prev => new Set(prev).add(notification.id));
     });

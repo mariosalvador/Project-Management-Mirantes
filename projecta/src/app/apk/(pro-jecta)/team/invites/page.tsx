@@ -14,19 +14,19 @@ import {
   Building
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useInvites } from '@/hooks/useInvites';
+import { useUserMembers } from '@/hooks/useUserMembers';
 import { formatLastActive, getRoleIcon, getRoleLabel } from '@/utils/userUtils';
 
 export default function UserInvitesPage() {
   const { user } = useAuth();
   const { toast, showToast, hideToast } = useToast();
   const {
-    userInvitations,
+    receivedInvites,
     acceptInvite,
     declineInvite,
     isLoading,
     error
-  } = useInvites();
+  } = useUserMembers();
 
   const handleAcceptInvite = async (inviteId: string) => {
     try {
@@ -76,7 +76,7 @@ export default function UserInvitesPage() {
             Meus Convites
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie os convites que você recebeu para participar de projetos
+            Gerencie os convites que você recebeu para se tornar membro de equipes
           </p>
         </div>
       </div>
@@ -91,9 +91,9 @@ export default function UserInvitesPage() {
       )}
 
       {/* Lista de Convites */}
-      {userInvitations.length > 0 ? (
+      {receivedInvites.length > 0 ? (
         <div className="grid gap-4">
-          {userInvitations.map((invitation) => (
+          {receivedInvites.map((invitation) => (
             <Card key={invitation.id} className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -103,18 +103,18 @@ export default function UserInvitesPage() {
                         <Building className="h-5 w-5 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold">{invitation.projectTitle}</h3>
+                        <h3 className="text-lg font-semibold">Convite de {invitation.invitedByName}</h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <User className="h-3 w-3" />
-                          Convidado por {invitation.invitedByName}
+                          {invitation.invitedByEmail}
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center gap-2">
-                        {getRoleIcon(invitation.role)}
-                        <span className="font-medium">Função: {getRoleLabel(invitation.role)}</span>
+                        {getRoleIcon(invitation.defaultRole)}
+                        <span className="font-medium">Função padrão: {getRoleLabel(invitation.defaultRole)}</span>
                       </div>
 
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -126,6 +126,12 @@ export default function UserInvitesPage() {
                         <Calendar className="h-3 w-3" />
                         Expira em {formatLastActive(invitation.expiresAt)}
                       </div>
+
+                      {invitation.message && (
+                        <div className="text-sm bg-white p-3 rounded border mt-3">
+                          <strong>Mensagem:</strong> {invitation.message}
+                        </div>
+                      )}
                     </div>
 
                     <Badge variant="secondary">Pendente</Badge>
@@ -165,10 +171,10 @@ export default function UserInvitesPage() {
               <Mail className="h-16 w-16 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">Nenhum convite pendente</h3>
               <p className="text-sm">
-                Você não tem convites pendentes no momento.
+                Você não tem convites para se tornar membro de equipes no momento.
               </p>
               <p className="text-sm mt-1">
-                Quando alguém te convidar para um projeto, os convites aparecerão aqui.
+                Quando alguém te convidar para ser membro da equipe, os convites aparecerão aqui.
               </p>
             </div>
           </CardContent>

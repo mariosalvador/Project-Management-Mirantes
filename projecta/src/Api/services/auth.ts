@@ -5,7 +5,7 @@ import { checkPendingInvitesOnLogin } from "./invites"
 
 const googleProvider = new GoogleAuthProvider()
 
-const saveUserToFirestore = async (user: User, provider: 'email' | 'google') => {
+const saveUserToFirestore = async (user: User, provider: 'email' | 'google', isNewUser: boolean = false) => {
   try {
     const userRef = doc(db, 'users', user.uid)
     const now = new Date()
@@ -29,11 +29,16 @@ const saveUserToFirestore = async (user: User, provider: 'email' | 'google') => 
       }
     }
 
-    const userData = provider === 'email'
+    const userData = (provider === 'email' && isNewUser)
       ? { ...baseData, createdAt: now.toISOString() }
       : baseData
 
     await setDoc(userRef, userData, { merge: true })
+
+    // Verificar convites pendentes após salvar usuário
+    if (user.email) {
+      await checkPendingInvitesOnLogin(user.email, user.uid, isNewUser)
+    }
   } catch (error) {
     console.error('Erro ao salvar usuário no Firestore:', error)
     throw error
@@ -42,32 +47,29 @@ const saveUserToFirestore = async (user: User, provider: 'email' | 'google') => 
 
 export const signUp = async (email: string, password: string) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-  await saveUserToFirestore(userCredential.user, 'email')
-
-  // Verificar convites pendentes após criar conta
-  await checkPendingInvitesOnLogin(email, userCredential.user.uid)
+  // Marcar como novo usuário
+  await saveUserToFirestore(userCredential.user, 'email', true)
 
   return userCredential.user
 }
 
 export const signIn = async (email: string, password: string) => {
   const userCredential = await signInWithEmailAndPassword(auth, email, password)
-  await saveUserToFirestore(userCredential.user, 'email')
-
-  // Verificar convites pendentes após login
-  await checkPendingInvitesOnLogin(email, userCredential.user.uid)
+  // Usuário existente fazendo login
+  await saveUserToFirestore(userCredential.user, 'email', false)
 
   return userCredential.user
 }
 
 export const signInWithGoogle = async () => {
   const userCredential = await signInWithPopup(auth, googleProvider)
-  await saveUserToFirestore(userCredential.user, 'google')
 
-  // Verificar convites pendentes após login
-  if (userCredential.user.email) {
-    await checkPendingInvitesOnLogin(userCredential.user.email, userCredential.user.uid)
-  }
+  // Verificar se é um usuário novo ou existente
+  const userRef = doc(db, 'users', userCredential.user.uid)
+  const userSnap = await getDoc(userRef)
+  const isNewUser = !userSnap.exists()
+
+  await saveUserToFirestore(userCredential.user, 'google', isNewUser)
 
   return userCredential.user
 }

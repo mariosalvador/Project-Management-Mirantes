@@ -9,19 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Avatar } from "@/components/ui/avatar";
 import {
   ArrowLeft,
-  Plus,
-  X,
-  Calendar,
-  Users,
-  DollarSign,
   Save,
   AlertCircle,
-  Briefcase,
-  Target,
-  Flag
+  Briefcase
 } from "lucide-react";
 import Link from "next/link";
 import { Project, TeamMember, Task, Milestone } from "@/types/project";
@@ -29,6 +21,9 @@ import { getPriorityColor, getStatusColor } from "@/utils/tasksFormatters";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
 import { useProjects } from "@/hooks/useProjects";
 import { toast } from "sonner";
+import ProjectTeamSelector from "@/components/projecta/project/ProjectTeamSelector";
+import ProjectTasksManager from "@/components/projecta/project/ProjectTasksManager";
+import ProjectMilestonesManager from "@/components/projecta/project/ProjectMilestonesManager";
 
 interface ProjectFormData {
   title: string;
@@ -67,39 +62,183 @@ export default function CreateProjectPage() {
     milestones: []
   });
 
-  const [newTeamMember, setNewTeamMember] = useState({
-    name: "",
-    role: "",
-    avatar: ""
-  });
-
-  const [newTask, setNewTask] = useState({
-    title: "",
-    assignee: "",
-    dueDate: ""
-  });
-
-  const [newMilestone, setNewMilestone] = useState({
-    title: "",
-    date: ""
-  });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [warnings, setWarnings] = useState<Record<string, string>>({});
+
+  // Função para validação em tempo real de datas
+  // Função para limpar erros específicos quando o usuário corrige um campo
+  const clearFieldError = (fieldName: string) => {
+    if (errors[fieldName]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateDatesRealTime = (startDate: string, dueDate: string) => {
+    const newWarnings: Record<string, string> = {};
+
+    if (startDate && dueDate) {
+      const start = new Date(startDate);
+      const end = new Date(dueDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      // Avisos para durações muito curtas ou muito longas
+      if (diffDays < 7) {
+        newWarnings.duration = "Projeto com duração muito curta (menos de 1 semana)";
+      } else if (diffDays > 365) {
+        newWarnings.duration = "Projeto com duração muito longa (mais de 1 ano)";
+      }
+
+      // Aviso se o projeto começar muito em breve
+      const today = new Date();
+      const timeTillStart = start.getTime() - today.getTime();
+      const daysTillStart = Math.ceil(timeTillStart / (1000 * 60 * 60 * 24));
+
+      if (daysTillStart < 2 && daysTillStart >= 0) {
+        newWarnings.startSoon = "Projeto iniciará em breve. Certifique-se de que a equipe está preparada";
+      }
+    }
+
+    setWarnings(newWarnings);
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
+    // Validações básicas
     if (!formData.title.trim()) {
       newErrors.title = "Título é obrigatório";
+    } else if (formData.title.trim().length < 3) {
+      newErrors.title = "Título deve ter pelo menos 3 caracteres";
+    } else if (formData.title.trim().length > 100) {
+      newErrors.title = "Título deve ter no máximo 100 caracteres";
     }
+
     if (!formData.description.trim()) {
       newErrors.description = "Descrição é obrigatória";
+    } else if (formData.description.trim().length < 10) {
+      newErrors.description = "Descrição deve ter pelo menos 10 caracteres";
+    } else if (formData.description.trim().length > 1000) {
+      newErrors.description = "Descrição deve ter no máximo 1000 caracteres";
     }
+
     if (!formData.manager.trim()) {
       newErrors.manager = "Gerente do projeto é obrigatório";
+    } else if (formData.manager.trim().length < 2) {
+      newErrors.manager = "Nome do gerente deve ter pelo menos 2 caracteres";
     }
+
+    // Validações de datas
     if (!formData.dueDate) {
       newErrors.dueDate = "Data de entrega é obrigatória";
+    } else {
+      const dueDate = new Date(formData.dueDate);
+
+      // Verificar se a data de entrega não é no passado
+      if (formData.dueDate < todayStr) {
+        newErrors.dueDate = "Data de entrega não pode ser no passado";
+      }
+
+      // Verificar se a data não é muito distante no futuro (5 anos)
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 5);
+      if (dueDate > maxDate) {
+        newErrors.dueDate = "Data de entrega não pode ser superior a 5 anos";
+      }
+    }
+
+    // Validações da data de início
+    if (formData.startDate) {
+      const startDate = new Date(formData.startDate);
+
+      // Verificar se a data de início não é muito antiga (6 meses atrás)
+      const minStartDate = new Date();
+      minStartDate.setMonth(minStartDate.getMonth() - 6);
+      if (startDate < minStartDate) {
+        newErrors.startDate = "Data de início não pode ser anterior a 6 meses atrás";
+      }
+
+      // Verificar se a data de início não é muito distante no futuro (2 anos)
+      const maxStartDate = new Date();
+      maxStartDate.setFullYear(maxStartDate.getFullYear() + 2);
+      if (startDate > maxStartDate) {
+        newErrors.startDate = "Data de início não pode ser superior a 2 anos";
+      }
+
+      // Verificar se a data de início é anterior à data de entrega
+      if (formData.dueDate && formData.startDate > formData.dueDate) {
+        newErrors.startDate = "Data de início deve ser anterior à data de entrega";
+      }
+
+      // Verificar duração mínima do projeto (pelo menos 1 dia)
+      if (formData.dueDate && formData.startDate === formData.dueDate) {
+        newErrors.dueDate = "O projeto deve ter duração mínima de 1 dia";
+      }
+    }
+
+    // Validação da duração máxima do projeto
+    if (formData.startDate && formData.dueDate) {
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.dueDate);
+      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      // Projeto não pode durar mais de 3 anos
+      if (diffDays > 1095) { // 3 anos = 1095 dias
+        newErrors.dueDate = "Duração do projeto não pode exceder 3 anos";
+      }
+    }
+
+    // Validações da equipe
+    if (formData.team.length === 0) {
+      newErrors.team = "Pelo menos um membro da equipe deve ser adicionado";
+    }
+
+    // Validação de categoria
+    if (formData.category.trim() && formData.category.trim().length > 50) {
+      newErrors.category = "Categoria deve ter no máximo 50 caracteres";
+    }
+
+    // Validação de orçamento (se fornecido)
+    if (formData.budget.trim()) {
+      const budgetNum = parseFloat(formData.budget.replace(/[^\d.]/g, ''));
+      if (isNaN(budgetNum) || budgetNum < 0) {
+        newErrors.budget = "Orçamento deve ser um valor numérico válido";
+      } else if (budgetNum > 999999999) {
+        newErrors.budget = "Orçamento não pode exceder 999.999.999";
+      }
+    }
+
+    // Validação de marcos
+    if (formData.milestones.length > 0) {
+      formData.milestones.forEach((milestone, index) => {
+        if (formData.startDate && milestone.date < formData.startDate) {
+          newErrors[`milestone_${index}`] = `Marco "${milestone.title}" não pode ser anterior à data de início`;
+        }
+
+        if (formData.dueDate && milestone.date > formData.dueDate) {
+          newErrors[`milestone_${index}`] = `Marco "${milestone.title}" não pode ser posterior à data de entrega`;
+        }
+      });
+    }
+
+    // Validação de tarefas
+    if (formData.tasks.length > 0) {
+      formData.tasks.forEach((task, index) => {
+        if (formData.startDate && task.dueDate < formData.startDate) {
+          newErrors[`task_${index}`] = `Tarefa "${task.title}" não pode ter prazo anterior à data de início`;
+        }
+
+        if (formData.dueDate && task.dueDate > formData.dueDate) {
+          newErrors[`task_${index}`] = `Tarefa "${task.title}" não pode ter prazo posterior à data de entrega`;
+        }
+      });
     }
 
     setErrors(newErrors);
@@ -123,8 +262,6 @@ export default function CreateProjectPage() {
           projectId: projectId,
           projectTitle: formData.title
         });
-
-        // Redirecionar para a lista de projetos
         router.push("/apk/project");
       }
     } catch (error) {
@@ -133,84 +270,8 @@ export default function CreateProjectPage() {
     }
   };
 
-  const addTeamMember = () => {
-    if (newTeamMember.name && newTeamMember.role) {
-      const member: TeamMember = {
-        id: Date.now().toString(),
-        name: newTeamMember.name,
-        role: newTeamMember.role,
-        avatar: newTeamMember.name.split(' ').map(n => n[0]).join('').toUpperCase()
-      };
-
-      setFormData(prev => ({
-        ...prev,
-        team: [...prev.team, member]
-      }));
-
-      setNewTeamMember({ name: "", role: "", avatar: "" });
-    }
-  };
-
-  const removeTeamMember = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      team: prev.team.filter(member => member.id !== id)
-    }));
-  };
-
-  const addTask = () => {
-    if (newTask.title && newTask.assignee && newTask.dueDate) {
-      const task: Task = {
-        id: Date.now().toString(),
-        title: newTask.title,
-        status: "pending",
-        assignees: [newTask.assignee],
-        dueDate: newTask.dueDate
-      };
-
-      setFormData(prev => ({
-        ...prev,
-        tasks: [...prev.tasks, task]
-      }));
-
-      setNewTask({ title: "", assignee: "", dueDate: "" });
-    }
-  };
-
-  const removeTask = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tasks: prev.tasks.filter(task => task.id !== id)
-    }));
-  };
-
-  const addMilestone = () => {
-    if (newMilestone.title && newMilestone.date) {
-      const milestone: Milestone = {
-        id: Date.now().toString(),
-        title: newMilestone.title,
-        date: newMilestone.date,
-        status: "pending"
-      };
-
-      setFormData(prev => ({
-        ...prev,
-        milestones: [...prev.milestones, milestone]
-      }));
-
-      setNewMilestone({ title: "", date: "" });
-    }
-  };
-
-  const removeMilestone = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      milestones: prev.milestones.filter(milestone => milestone.id !== id)
-    }));
-  };
-
   return (
-    <div className="container ">
+    <div className="container h-full ">
       {/* Breadcrumb */}
       <div className="mb-4">
         <Breadcrumb
@@ -271,7 +332,10 @@ export default function CreateProjectPage() {
                     <Input
                       id="title"
                       value={formData.title}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, title: e.target.value }));
+                        clearFieldError('title');
+                      }}
                       placeholder="Digite o título do projeto"
                       className={errors.title ? "border-red-500" : ""}
                     />
@@ -288,7 +352,10 @@ export default function CreateProjectPage() {
                     <textarea
                       id="description"
                       value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, description: e.target.value }));
+                        clearFieldError('description');
+                      }}
                       placeholder="Descreva os objetivos e escopo do projeto"
                       className={`w-full px-3 py-2 border rounded-md min-h-[100px] ${errors.description ? "border-red-500" : "border-input"}`}
                     />
@@ -307,7 +374,14 @@ export default function CreateProjectPage() {
                       value={formData.category}
                       onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                       placeholder="Ex: Design, Desenvolvimento, Marketing"
+                      className={errors.category ? "border-red-500" : ""}
                     />
+                    {errors.category && (
+                      <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.category}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -315,7 +389,10 @@ export default function CreateProjectPage() {
                     <Input
                       id="manager"
                       value={formData.manager}
-                      onChange={(e) => setFormData(prev => ({ ...prev, manager: e.target.value }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, manager: e.target.value }));
+                        clearFieldError('manager');
+                      }}
                       placeholder="Nome do gerente responsável"
                       className={errors.manager ? "border-red-500" : ""}
                     />
@@ -326,205 +403,59 @@ export default function CreateProjectPage() {
                       </p>
                     )}
                   </div>
+
+                  <div className="md:col-span-2">
+                    <Label htmlFor="budget">Orçamento (Opcional)</Label>
+                    <Input
+                      id="budget"
+                      value={formData.budget}
+                      onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
+                      placeholder="Ex: 50000, R$ 100.000"
+                      className={errors.budget ? "border-red-500" : ""}
+                    />
+                    {errors.budget && (
+                      <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.budget}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Equipe do Projeto */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Equipe do Projeto
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg bg-muted/50">
-                  <div>
-                    <Label htmlFor="memberName">Nome do Membro</Label>
-                    <Input
-                      id="memberName"
-                      value={newTeamMember.name}
-                      onChange={(e) => setNewTeamMember(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Nome completo"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="memberRole">Função</Label>
-                    <Input
-                      id="memberRole"
-                      value={newTeamMember.role}
-                      onChange={(e) => setNewTeamMember(prev => ({ ...prev, role: e.target.value }))}
-                      placeholder="Ex: Developer, Designer"
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button type="button" onClick={addTeamMember} className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar
-                    </Button>
-                  </div>
-                </div>
-
-                {formData.team.length > 0 && (
-                  <div className="space-y-2">
-                    {formData.team.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-                            {member.avatar}
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{member.name}</div>
-                            <div className="text-sm text-muted-foreground">{member.role}</div>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeTeamMember(member.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ProjectTeamSelector
+              selectedMembers={formData.team}
+              onMembersChange={(members) => setFormData(prev => ({ ...prev, team: members }))}
+            />
+            {errors.team && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="h-4 w-4" />
+                  {errors.team}
+                </p>
+              </div>
+            )}
 
             {/* Tarefas Iniciais */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Tarefas Iniciais
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/50">
-                  <div>
-                    <Label htmlFor="taskTitle">Título da Tarefa</Label>
-                    <Input
-                      id="taskTitle"
-                      value={newTask.title}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Título da tarefa"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="taskAssignee">Responsável</Label>
-                    <Input
-                      id="taskAssignee"
-                      value={newTask.assignee}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, assignee: e.target.value }))}
-                      placeholder="Nome do responsável"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="taskDueDate">Data de Entrega</Label>
-                    <Input
-                      id="taskDueDate"
-                      type="date"
-                      value={newTask.dueDate}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, dueDate: e.target.value }))}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button type="button" onClick={addTask} className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar
-                    </Button>
-                  </div>
-                </div>
-
-                {formData.tasks.length > 0 && (
-                  <div className="space-y-2">
-                    {formData.tasks.map((task) => (
-                      <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <div className="font-medium">{task.title}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {task.assignees} • {task.dueDate}
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeTask(task.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ProjectTasksManager
+              tasks={formData.tasks}
+              onTasksChange={(tasks) => setFormData(prev => ({ ...prev, tasks }))}
+              projectStartDate={formData.startDate}
+              projectDueDate={formData.dueDate}
+              teamMembers={formData.team}
+              errors={errors}
+            />
 
             {/* Marcos do Projeto */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Flag className="h-5 w-5" />
-                  Marcos do Projeto
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg bg-muted/50">
-                  <div>
-                    <Label htmlFor="milestoneTitle">Título do Marco</Label>
-                    <Input
-                      id="milestoneTitle"
-                      value={newMilestone.title}
-                      onChange={(e) => setNewMilestone(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Nome do marco"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="milestoneDate">Data Prevista</Label>
-                    <Input
-                      id="milestoneDate"
-                      type="date"
-                      value={newMilestone.date}
-                      onChange={(e) => setNewMilestone(prev => ({ ...prev, date: e.target.value }))}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button type="button" onClick={addMilestone} className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar
-                    </Button>
-                  </div>
-                </div>
-
-                {formData.milestones.length > 0 && (
-                  <div className="space-y-2">
-                    {formData.milestones.map((milestone) => (
-                      <div key={milestone.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <div className="font-medium">{milestone.title}</div>
-                          <div className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {milestone.date}
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeMilestone(milestone.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ProjectMilestonesManager
+              milestones={formData.milestones}
+              onMilestonesChange={(milestones) => setFormData(prev => ({ ...prev, milestones }))}
+              projectStartDate={formData.startDate}
+              projectDueDate={formData.dueDate}
+              errors={errors}
+            />
           </div>
 
           {/* Barra Lateral */}
@@ -587,8 +518,18 @@ export default function CreateProjectPage() {
                     id="startDate"
                     type="date"
                     value={formData.startDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, startDate: e.target.value }));
+                      validateDatesRealTime(e.target.value, formData.dueDate);
+                    }}
+                    className={errors.startDate ? "border-red-500" : ""}
                   />
+                  {errors.startDate && (
+                    <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.startDate}
+                    </p>
+                  )}
                 </div>
 
                 <Separator />
@@ -599,7 +540,10 @@ export default function CreateProjectPage() {
                     id="dueDate"
                     type="date"
                     value={formData.dueDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, dueDate: e.target.value }));
+                      validateDatesRealTime(formData.startDate, e.target.value);
+                    }}
                     className={errors.dueDate ? "border-red-500" : ""}
                   />
                   {errors.dueDate && (
@@ -610,21 +554,21 @@ export default function CreateProjectPage() {
                   )}
                 </div>
 
-                <Separator />
-
-                <div>
-                  <Label htmlFor="budget">Orçamento</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="budget"
-                      value={formData.budget}
-                      onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
-                      placeholder="R$ 0,00"
-                      className="pl-9"
-                    />
+                {/* Avisos de validação em tempo real */}
+                {(warnings.duration || warnings.startSoon) && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <div className="flex">
+                      <AlertCircle className="h-4 w-4 text-yellow-400 mt-0.5" />
+                      <div className="ml-2">
+                        <h4 className="text-sm font-medium text-yellow-800">Avisos:</h4>
+                        <div className="mt-1 text-sm text-yellow-700">
+                          {warnings.duration && <p>• {warnings.duration}</p>}
+                          {warnings.startSoon && <p>• {warnings.startSoon}</p>}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -646,6 +590,55 @@ export default function CreateProjectPage() {
                   <span className="text-muted-foreground">Marcos definidos:</span>
                   <span className="font-medium">{formData.milestones.length}</span>
                 </div>
+                {formData.budget && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Orçamento:</span>
+                    <span className="font-medium">{formData.budget}</span>
+                  </div>
+                )}
+                {formData.startDate && formData.dueDate && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Duração:</span>
+                    <span className="font-medium">
+                      {Math.ceil((new Date(formData.dueDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24))} dias
+                    </span>
+                  </div>
+                )}
+
+                {/* Indicador de status de validação */}
+                <div className="pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    {Object.keys(errors).length === 0 ? (
+                      <>
+                        <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                        <span className="text-green-600 text-xs">Pronto para criar</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                        <span className="text-red-600 text-xs">{Object.keys(errors).length} erro(s) encontrado(s)</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Dicas para criação do projeto */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">💡 Dicas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-xs text-muted-foreground">
+                <p>• Defina datas realistas considerando complexidade e recursos</p>
+                <p>• Adicione marcos importantes para acompanhar o progresso</p>
+                <p>• Inclua todos os membros necessários desde o início</p>
+                <p>• Use uma descrição clara e objetiva do projeto</p>
+                {formData.startDate && formData.dueDate && (
+                  <p className="text-blue-600">
+                    • Duração planejada: {Math.ceil((new Date(formData.dueDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24))} dias
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

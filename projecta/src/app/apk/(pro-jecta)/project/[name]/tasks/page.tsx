@@ -37,7 +37,6 @@ import {
   formatHours,
   getTasksStats
 } from "@/utils/tasksFormatters";
-import { useNotifications } from "@/hooks/useNotifications";
 import { useTaskDeadlineMonitor } from "@/hooks/useTaskMonitoring";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
 
@@ -88,13 +87,7 @@ export default function ProjectTasksPage() {
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [updatingTasks, setUpdatingTasks] = useState<Set<string>>(new Set());
 
-  // Sistema de toast
   const { toast, showToast, hideToast } = useToast();
-
-  // Sistema de notificações
-  const { notifyTaskStatusChange } = useNotifications();
-
-  // Sistema de atividades
   const { logTaskStatusChanged } = useActivityLogger();
 
   // Monitor de prazos de tarefas
@@ -224,10 +217,10 @@ export default function ProjectTasksPage() {
     if (!task || !project) return;
 
     const oldStatus = task.status;
-    
+
     // Adicionar tarefa ao estado de loading
     setUpdatingTasks(prev => new Set(prev).add(taskId));
-    
+
     // Atualizar estado local imediatamente para responsividade
     const updatedTasks = tasks.map(task =>
       task.id === taskId
@@ -237,13 +230,12 @@ export default function ProjectTasksPage() {
     setTasks(updatedTasks);
 
     try {
-      // Atualizar no Firestore
       await updateProject(project.id, {
         tasks: updatedTasks,
         // Recalcular estatísticas do projeto
         tasksCompleted: updatedTasks.filter(t => t.status === 'completed').length,
         totalTasks: updatedTasks.length,
-        progress: updatedTasks.length > 0 
+        progress: updatedTasks.length > 0
           ? Math.round((updatedTasks.filter(t => t.status === 'completed').length / updatedTasks.length) * 100)
           : 0
       });
@@ -251,11 +243,8 @@ export default function ProjectTasksPage() {
       // Feedback visual com toast
       showToast(`Tarefa "${task.title}" atualizada com sucesso!`, 'success');
 
-      // Criar notificação de mudança de status
+      // Registrar atividade no feed se houve mudança de status
       if (oldStatus !== newStatus) {
-        notifyTaskStatusChange(task, oldStatus, newStatus, project.title);
-
-        // Registrar atividade no feed
         logTaskStatusChanged(
           {
             taskId: task.id,
@@ -269,14 +258,9 @@ export default function ProjectTasksPage() {
       }
     } catch (error) {
       console.error("Erro ao atualizar status da tarefa:", error);
-      
-      // Reverter estado local em caso de erro
       setTasks(tasks);
-      
-      // Mostrar erro
       showToast("Erro ao atualizar status da tarefa. Tente novamente.", 'error');
     } finally {
-      // Remover tarefa do estado de loading
       setUpdatingTasks(prev => {
         const newSet = new Set(prev);
         newSet.delete(taskId);
@@ -605,9 +589,8 @@ function TaskCard({ task, onStatusChange, projectTitle, isUpdating = false }: Ta
   const progress = calculateTaskProgress(task);
 
   return (
-    <Card className={`cursor-grab active:cursor-grabbing hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group ${
-      isUpdating ? 'opacity-70 pointer-events-none' : ''
-    }`}>
+    <Card className={`cursor-grab active:cursor-grabbing hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group ${isUpdating ? 'opacity-70 pointer-events-none' : ''
+      }`}>
       <CardContent className="p-4">
         <div className="space-y-3">
           {/* Header */}
@@ -654,7 +637,7 @@ function TaskCard({ task, onStatusChange, projectTitle, isUpdating = false }: Ta
               <option value="active">Em Progresso</option>
               <option value="completed">Concluída</option>
             </select>
-            
+
             {isUpdating && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <RefreshCw className="h-3 w-3 animate-spin" />
@@ -761,74 +744,73 @@ function TaskListView({ tasks, onStatusChange, projectTitle, updatingTasks = new
             tasks.map((task) => {
               const isUpdating = updatingTasks.has(task.id);
               return (
-              <div key={task.id} className={`flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors ${
-                isUpdating ? 'opacity-70' : ''
-              }`}>
-                {/* Status Indicator */}
-                <div className={`w-3 h-3 rounded-full transition-colors ${task.status === 'completed' ? 'bg-green-500' :
-                  task.status === 'active' ? 'bg-blue-500' : 'bg-gray-300'
-                  }`} />
+                <div key={task.id} className={`flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors ${isUpdating ? 'opacity-70' : ''
+                  }`}>
+                  {/* Status Indicator */}
+                  <div className={`w-3 h-3 rounded-full transition-colors ${task.status === 'completed' ? 'bg-green-500' :
+                    task.status === 'active' ? 'bg-blue-500' : 'bg-gray-300'
+                    }`} />
 
-                {/* Task Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium truncate">
-                      {task.title}
-                      {isUpdating && (
-                        <span className="ml-2 inline-block">
-                          <RefreshCw className="h-3 w-3 animate-spin" />
+                  {/* Task Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium truncate">
+                        {task.title}
+                        {isUpdating && (
+                          <span className="ml-2 inline-block">
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          </span>
+                        )}
+                      </h4>
+                      {task.priority && (
+                        <Badge className={getPriorityColor(task.priority)}>
+                          {getPriorityLabel(task.priority)}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>{formatAssignees(task.assignees)}</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(task.dueDate).toLocaleDateString('pt-BR')}
+                      </span>
+                      {task.estimatedHours && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatHours(task.estimatedHours)}
                         </span>
                       )}
-                    </h4>
-                    {task.priority && (
-                      <Badge className={getPriorityColor(task.priority)}>
-                        {getPriorityLabel(task.priority)}
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{formatAssignees(task.assignees)}</span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(task.dueDate).toLocaleDateString('pt-BR')}
-                    </span>
-                    {task.estimatedHours && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatHours(task.estimatedHours)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  <select
-                    value={task.status}
-                    onChange={(e) => onStatusChange(task.id, e.target.value as Task['status'])}
-                    className="text-sm px-2 py-1 border rounded transition-colors hover:border-primary"
-                    disabled={isUpdating}
-                  >
-                    <option value="pending">Pendente</option>
-                    <option value="active">Em Progresso</option>
-                    <option value="completed">Concluída</option>
-                  </select>
-
-                  {isUpdating && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <RefreshCw className="h-3 w-3 animate-spin" />
-                      <span>Salvando...</span>
                     </div>
-                  )}
+                  </div>
 
-                  <Link href={`/apk/project/${encodeURIComponent(projectTitle)}/tasks/manage?taskId=${task.id}`}>
-                    <Button variant="ghost" size="sm" className="hover:bg-primary/10">
-                      ✏️ Editar
-                    </Button>
-                  </Link>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={task.status}
+                      onChange={(e) => onStatusChange(task.id, e.target.value as Task['status'])}
+                      className="text-sm px-2 py-1 border rounded transition-colors hover:border-primary"
+                      disabled={isUpdating}
+                    >
+                      <option value="pending">Pendente</option>
+                      <option value="active">Em Progresso</option>
+                      <option value="completed">Concluída</option>
+                    </select>
+
+                    {isUpdating && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        <span>Salvando...</span>
+                      </div>
+                    )}
+
+                    <Link href={`/apk/project/${encodeURIComponent(projectTitle)}/tasks/manage?taskId=${task.id}`}>
+                      <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                        ✏️ Editar
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-              </div>
               );
             })
           )}

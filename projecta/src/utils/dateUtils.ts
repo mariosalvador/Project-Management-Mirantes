@@ -11,7 +11,6 @@ type FirestoreDate = FirestoreTimestamp | { seconds: number } | string | Date | 
 // Função para formatar data do Firestore
 export const formatFirestoreDate = (firestoreDate: FirestoreDate): string => {
   try {
-    // Se é um Firestore Timestamp
     if (firestoreDate && typeof (firestoreDate as any).toDate === 'function') {
       return (firestoreDate as FirestoreTimestamp).toDate().toLocaleDateString('pt-BR', {
         year: 'numeric',
@@ -69,7 +68,6 @@ export const formatFirestoreDate = (firestoreDate: FirestoreDate): string => {
 // Função mais simples para data apenas (sem hora)
 export const formatFirestoreDateSimple = (firestoreDate: FirestoreDate): string => {
   try {
-    // Se é um Firestore Timestamp
     if (firestoreDate && typeof (firestoreDate as any).toDate === 'function') {
       return (firestoreDate as FirestoreTimestamp).toDate().toLocaleDateString('pt-BR')
     }

@@ -84,28 +84,37 @@ const createInviteNotificationIfUserExists = async (email: string, invitation: T
       const userData = querySnapshot.docs[0].data();
       const userId = userData.uid;
 
-      // Criar notificação
-      const notificationId = `invite_${invitation.id}_${Date.now()}`;
-      const notificationRef = doc(db, 'notifications', notificationId);
+      // Verificar se já existe notificação para este convite
+      const notificationExists = await notificationExistsForInvite(userId, invitation.id);
 
-      await setDoc(notificationRef, {
-        id: notificationId,
-        type: 'team_invitation',
-        title: 'Convite para Equipe',
-        message: `Você foi convidado para participar do projeto "${invitation.projectTitle}" como ${getRoleLabel(invitation.role)}`,
-        userId,
-        projectId: invitation.projectId,
-        invitationId: invitation.id,
-        isRead: false,
-        priority: 'medium',
-        createdAt: new Date().toISOString(),
-        actionUrl: `/team/invites`,
-        metadata: {
-          invitedBy: invitation.invitedByName,
-          role: invitation.role,
-          projectTitle: invitation.projectTitle
-        }
-      });
+      if (!notificationExists) {
+        // Criar notificação
+        const notificationId = `invite_${invitation.id}_${userId}_${Date.now()}`;
+        const notificationRef = doc(db, 'notifications', notificationId);
+
+        await setDoc(notificationRef, {
+          id: notificationId,
+          type: 'team_invitation',
+          title: 'Convite para Equipe',
+          message: `Você foi convidado para participar do projeto "${invitation.projectTitle}" como ${getRoleLabel(invitation.role)}`,
+          userId,
+          projectId: invitation.projectId,
+          invitationId: invitation.id,
+          isRead: false,
+          priority: 'medium',
+          createdAt: new Date().toISOString(),
+          actionUrl: `/apk/notifications`,
+          metadata: {
+            invitedBy: invitation.invitedByName,
+            role: invitation.role,
+            projectTitle: invitation.projectTitle
+          }
+        });
+
+        console.log(`Notificação de convite criada para usuário existente: ${email}`);
+      }
+    } else {
+      console.log(`Usuário ${email} ainda não possui conta. Convite ficará pendente até a criação da conta.`);
     }
   } catch (error) {
     console.error('Erro ao criar notificação de convite:', error);
@@ -326,36 +335,172 @@ const getRoleLabel = (role: UserRole): string => {
   return roleLabels[role] || role;
 };
 
-// Verificar convites pendentes ao fazer login
-export const checkPendingInvitesOnLogin = async (email: string, userId: string) => {
+// Buscar convites pendentes por email (função pública, sem restrições de segurança)
+export const getPendingInvitesByEmail = async (email: string): Promise<TeamInvitation[]> => {
   try {
-    const invites = await getUserInvites(email);
+    const invitesRef = collection(db, 'team_invitations');
+    const q = query(
+      invitesRef,
+      where('email', '==', email.toLowerCase()),
+      where('status', '==', 'pending')
+    );
 
-    // Criar notificações para convites pendentes
-    for (const invite of invites) {
-      const notificationId = `invite_${invite.id}_${Date.now()}`;
-      const notificationRef = doc(db, 'notifications', notificationId);
+    const querySnapshot = await getDocs(q);
+    const invites: TeamInvitation[] = [];
+    const now = new Date();
 
-      await setDoc(notificationRef, {
-        id: notificationId,
-        type: 'team_invitation',
-        title: 'Convite para Equipe Pendente',
-        message: `Você tem um convite pendente para o projeto "${invite.projectTitle}"`,
-        userId,
-        projectId: invite.projectId,
-        invitationId: invite.id,
-        isRead: false,
-        priority: 'medium',
-        createdAt: new Date().toISOString(),
-        actionUrl: `/team/invites`,
-        metadata: {
-          invitedBy: invite.invitedByName,
-          role: invite.role,
-          projectTitle: invite.projectTitle
+    for (const docSnap of querySnapshot.docs) {
+      const invite = docSnap.data() as TeamInvitation;
+      const expiresAt = new Date(invite.expiresAt);
+
+      if (now > expiresAt) {
+        // Marcar como expirado
+        await updateInviteStatus(invite.id, 'expired');
+      } else {
+        invites.push({ ...invite, id: docSnap.id });
+      }
+    }
+
+    return invites.sort((a, b) => new Date(b.invitedAt).getTime() - new Date(a.invitedAt).getTime());
+  } catch (error) {
+    console.error('Erro ao buscar convites por email:', error);
+    return [];
+  }
+};
+
+// Limpar notificações duplicadas de convites
+export const cleanupDuplicateInviteNotifications = async (userId: string): Promise<void> => {
+  try {
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('userId', '==', userId),
+      where('type', '==', 'team_invitation')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const notifications: { [invitationId: string]: string[] } = {};
+
+    // Agrupar notificações por invitationId
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.invitationId) {
+        if (!notifications[data.invitationId]) {
+          notifications[data.invitationId] = [];
         }
-      });
+        notifications[data.invitationId].push(doc.id);
+      }
+    });
+
+    // Remover duplicatas (manter apenas a mais recente)
+    for (const invitationId in notifications) {
+      const notificationIds = notifications[invitationId];
+      if (notificationIds.length > 1) {
+        // Manter apenas a primeira (mais recente) e excluir as outras
+        for (let i = 1; i < notificationIds.length; i++) {
+          const notificationRef = doc(db, 'notifications', notificationIds[i]);
+          await deleteDoc(notificationRef);
+        }
+      }
     }
   } catch (error) {
+    console.error('Erro ao limpar notificações duplicadas:', error);
+  }
+};
+
+// Verificar se já existe notificação para um convite específico
+const notificationExistsForInvite = async (userId: string, inviteId: string): Promise<boolean> => {
+  try {
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('userId', '==', userId),
+      where('invitationId', '==', inviteId),
+      where('type', '==', 'team_invitation')
+    );
+
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  } catch (error) {
+    console.error('Erro ao verificar notificação existente:', error);
+    return false;
+  }
+};
+
+// Verificar convites pendentes ao fazer login ou criar conta
+export const checkPendingInvitesOnLogin = async (email: string, userId: string, isNewUser: boolean = false) => {
+  try {
+    console.log(`Verificando convites pendentes para ${email}, usuário novo: ${isNewUser}`);
+
+    // Buscar convites pendentes para este email (sem restrições de segurança)
+    const invitesRef = collection(db, 'team_invitations');
+    const q = query(
+      invitesRef,
+      where('email', '==', email.toLowerCase()),
+      where('status', '==', 'pending')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const pendingInvites: TeamInvitation[] = [];
+
+    // Verificar se os convites ainda são válidos
+    const now = new Date();
+    for (const docSnap of querySnapshot.docs) {
+      const invite = docSnap.data() as TeamInvitation;
+      const expiresAt = new Date(invite.expiresAt);
+
+      if (now > expiresAt) {
+        // Marcar como expirado
+        await updateInviteStatus(invite.id, 'expired');
+        console.log(`Convite ${invite.id} expirado`);
+      } else {
+        pendingInvites.push({ ...invite, id: docSnap.id });
+      }
+    }
+
+    console.log(`Encontrados ${pendingInvites.length} convites pendentes válidos`);
+
+    // Criar notificações para convites pendentes (evitando duplicatas)
+    for (const invite of pendingInvites) {
+      // Verificar se já existe notificação para este convite
+      const notificationExists = await notificationExistsForInvite(userId, invite.id);
+
+      if (!notificationExists) {
+        const notificationId = `invite_${invite.id}_${userId}_${Date.now()}`;
+        const notificationRef = doc(db, 'notifications', notificationId);
+
+        const message = isNewUser
+          ? `Bem-vindo! Você tem um convite para participar do projeto "${invite.projectTitle}" como ${getRoleLabel(invite.role)}`
+          : `Você tem um convite pendente para o projeto "${invite.projectTitle}" como ${getRoleLabel(invite.role)}`;
+
+        await setDoc(notificationRef, {
+          id: notificationId,
+          type: 'team_invitation',
+          title: isNewUser ? 'Convite de Equipe - Bem-vindo!' : 'Convite para Equipe Pendente',
+          message,
+          userId,
+          projectId: invite.projectId,
+          invitationId: invite.id,
+          isRead: false,
+          priority: 'medium',
+          createdAt: new Date().toISOString(),
+          actionUrl: `/apk/notifications`,
+          metadata: {
+            invitedBy: invite.invitedByName,
+            role: invite.role,
+            projectTitle: invite.projectTitle
+          }
+        });
+
+        console.log(`Notificação criada para convite ${invite.id}`);
+      } else {
+        console.log(`Notificação já existe para convite ${invite.id}`);
+      }
+    }
+
+    return pendingInvites.length;
+  } catch (error) {
     console.error('Erro ao verificar convites pendentes:', error);
+    return 0;
   }
 };

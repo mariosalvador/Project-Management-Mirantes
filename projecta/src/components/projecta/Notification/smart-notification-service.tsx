@@ -15,7 +15,6 @@ export function SmartNotificationService({ projects }: SmartNotificationServiceP
     settings
   } = useNotifications();
 
-  // Armazenar notificações já enviadas para evitar spam
   const [sentNotifications, setSentNotifications] = useState<Set<string>>(new Set());
 
   const generateNotificationKey = (type: string, taskId: string, additionalInfo?: string) => {
@@ -91,8 +90,6 @@ export function SmartNotificationService({ projects }: SmartNotificationServiceP
           const notificationKey = generateNotificationKey('milestone', project.id, milestone.toString());
 
           if (!sentNotifications.has(notificationKey)) {
-            // Aqui você pode adicionar uma função para notificar marcos
-            // notifyProjectMilestone(project, milestone);
             setSentNotifications(prev => new Set(prev).add(notificationKey));
           }
         }
@@ -101,15 +98,12 @@ export function SmartNotificationService({ projects }: SmartNotificationServiceP
   }, [projects, sentNotifications]);
 
   const checkQuietHours = () => {
-    // Por enquanto, sempre permitir notificações
-    // Esta funcionalidade pode ser implementada futuramente
     return false;
   };
 
   useEffect(() => {
     if (checkQuietHours()) return;
 
-    // Verificar imediatamente
     checkTaskDeadlines();
     checkProjectUpdates();
 
@@ -119,12 +113,12 @@ export function SmartNotificationService({ projects }: SmartNotificationServiceP
         checkTaskDeadlines();
         checkProjectUpdates();
       }
-    }, 3600000); // 1 hora
+    }, 3600000); 
 
     // Limpar notificações antigas (mais de 24 horas)
     const cleanupInterval = setInterval(() => {
       setSentNotifications(new Set());
-    }, 24 * 60 * 60 * 1000); // 24 horas
+    }, 24 * 60 * 60 * 1000); 
 
     return () => {
       clearInterval(interval);
@@ -132,5 +126,5 @@ export function SmartNotificationService({ projects }: SmartNotificationServiceP
     };
   }, [checkTaskDeadlines, checkProjectUpdates]);
 
-  return null; // Componente invisível
+  return null;
 }

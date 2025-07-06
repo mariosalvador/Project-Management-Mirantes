@@ -8,6 +8,7 @@ import { useIsMobile } from "@/lib/use-media-query"
 import { NotificationToastProvider } from "@/components/projecta/Notification/notification-toast-provider"
 import { PermissionProvider } from "@/hooks/usePermissions"
 import { ActivityProvider } from "@/hooks/useActivity"
+import { WelcomeWithInvites } from "@/components/projecta/Notification/welcome-with-invites"
 
 interface LayoutWithSidebarProps {
   children: React.ReactNode
@@ -21,7 +22,7 @@ export default function LayoutWithSidebar({ children }: LayoutWithSidebarProps) 
     <PermissionProvider>
       <ActivityProvider>
         <NotificationToastProvider>
-          <div className="flex h-screen bg-background">
+          <div className="flex h-screen overflow-hidden bg-background">
             {/* Sidebar Desktop */}
             {!isMobile && <Sidebar />}
 
@@ -54,6 +55,9 @@ export default function LayoutWithSidebar({ children }: LayoutWithSidebarProps) 
               <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">{children}</main>
             </div>
           </div>
+
+          {/* Componente de boas-vindas com convites */}
+          <WelcomeWithInvites />
         </NotificationToastProvider>
       </ActivityProvider>
     </PermissionProvider>
