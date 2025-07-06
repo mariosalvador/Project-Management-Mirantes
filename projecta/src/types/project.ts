@@ -45,6 +45,10 @@ export interface Project {
   team?: TeamMember[];
   tasks?: Task[];
   milestones?: Milestone[];
+  createdBy?: string; // ID do usuário que criou o projeto
+  createdAt?: string;
+  updatedAt?: string;
+  isArchived?: boolean;
 }
 
 export interface ProjectSample {

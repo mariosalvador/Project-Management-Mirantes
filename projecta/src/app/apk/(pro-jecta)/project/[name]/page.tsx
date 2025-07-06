@@ -1,6 +1,5 @@
 "use client";
 import { useParams } from "next/navigation";
-import { mockProjects } from "../mock";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import {
   Users,
   CheckCircle,
   Clock,
-  DollarSign,
   Target,
   ArrowLeft,
   Plus,
@@ -20,17 +18,59 @@ import {
   AlertCircle,
   Briefcase,
   Flag,
-  Upload
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { getPriorityColor, getPriorityLabel, getStatusColor, getStatusLabel, getTaskStatusColor, getTaskStatusLabel } from "@/utils/tasksFormatters";
+import { useProjectByTitle } from "@/hooks/useProjects";
+import { useUserInfo } from "@/hooks/useUserInfo";
+import { formatFirestoreDate } from "@/utils/dateUtils";
 
 export default function ProjectDetailsPage() {
   const { name } = useParams<{ name: string }>();
 
-  // Encontrar o projeto pelo nome (decodificar URL)
+  // Decodificar o nome do projeto da URL
   const decodedName = decodeURIComponent(name);
-  const project = mockProjects.find(p => p.title === decodedName);
+
+  // Usar hook para buscar projeto pelo título
+  const { project, loading, error, refreshProject } = useProjectByTitle(decodedName);
+
+  // Buscar informações do usuário criador
+  const { userInfo: creatorInfo, loading: creatorLoading } = useUserInfo(project?.createdBy || null);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <RefreshCw className="h-12 w-12 text-muted-foreground mb-4 animate-spin" />
+        <h2 className="text-xl font-semibold mb-2">Carregando projeto...</h2>
+        <p className="text-muted-foreground">
+          Buscando informações do projeto &quot;{decodedName}&quot;
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Erro ao carregar projeto</h2>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <div className="flex gap-2">
+          <Button onClick={refreshProject}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+          <Link href="/apk/project">
+            <Button variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar aos Projetos
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -66,12 +106,6 @@ export default function ProjectDetailsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/apk/project/${encodeURIComponent(project.title)}/files`}>
-            <Button variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Arquivos
-            </Button>
-          </Link>
           <Link href={`/apk/project/${encodeURIComponent(project.title)}/tasks/manage`}>
             <Button variant="outline">
               <Plus className="h-4 w-4 mr-2" />
@@ -98,7 +132,7 @@ export default function ProjectDetailsPage() {
                   <span className="text-sm font-medium">Progresso</span>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-2xl font-bold">{project.progress}%</div>
+                  <div className="text-2xl font-bold">{project.progress || 0}%</div>
                   <Progress
                     value={project.progress || 0}
                     size="md"
@@ -119,7 +153,7 @@ export default function ProjectDetailsPage() {
                   <span className="text-sm font-medium">Tarefas</span>
                 </div>
                 <div className="text-2xl font-bold">
-                  {project.tasksCompleted}/{project.totalTasks}
+                  {project.tasksCompleted || 0}/{project.totalTasks || 0}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {project.tasksCompleted && project.totalTasks
@@ -135,7 +169,7 @@ export default function ProjectDetailsPage() {
                   <Users className="h-4 w-4 text-purple-500" />
                   <span className="text-sm font-medium">Equipe</span>
                 </div>
-                <div className="text-2xl font-bold">{project.teamMembers}</div>
+                <div className="text-2xl font-bold">{project.teamMembers || project.team?.length || 0}</div>
                 <div className="text-xs text-muted-foreground">membros ativos</div>
               </CardContent>
             </Card>
@@ -146,7 +180,7 @@ export default function ProjectDetailsPage() {
                   <Calendar className="h-4 w-4 text-orange-500" />
                   <span className="text-sm font-medium">Entrega</span>
                 </div>
-                <div className="text-sm font-bold">{project.dueDate}</div>
+                <div className="text-sm font-bold">{project.dueDate || 'Não definido'}</div>
                 <div className="text-xs text-muted-foreground">prazo final</div>
               </CardContent>
             </Card>
@@ -323,22 +357,37 @@ export default function ProjectDetailsPage() {
                 <span className="text-sm font-medium text-muted-foreground">Data de Entrega</span>
                 <div className="mt-1 flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>{project.dueDate}</span>
+                  <span>{project.dueDate || 'Não definido'}</span>
                 </div>
               </div>
 
               <Separator />
 
-              {project.budget && (
+              {project.createdBy && (
                 <>
                   <div>
-                    <span className="text-sm font-medium text-muted-foreground">Orçamento</span>
-                    <div className="mt-1 flex items-center gap-1">
-                      <DollarSign className="h-4 w-4" />
-                      <span>{project.budget}</span>
+                    <span className="text-sm font-medium text-muted-foreground">Criado por</span>
+                    <div className="mt-1 font-medium">
+                      {creatorLoading ? (
+                        <span className="text-muted-foreground">Carregando...</span>
+                      ) : (
+                        creatorInfo?.displayName || creatorInfo?.email || "Usuário desconhecido"
+                      )}
                     </div>
                   </div>
+
+                  <Separator />
                 </>
+              )}
+
+              {project.createdAt && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Data de Criação</span>
+                  <div className="mt-1 flex items-center gap-1 text-sm">
+                    <Calendar className="h-3 w-3" />
+                    <span>{formatFirestoreDate(project.createdAt)}</span>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

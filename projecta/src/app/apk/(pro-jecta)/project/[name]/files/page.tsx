@@ -3,16 +3,49 @@
 import { useParams } from "next/navigation";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { FileManager } from "@/components/projecta/File/file-manager";
-import { mockProjects } from "../../mock";
-import { Project } from "@/types/project";
-import { ArrowLeft, FolderOpen } from "lucide-react";
+import { useProjectByTitle } from "@/hooks/useProjects";
+import { ArrowLeft, FolderOpen, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function ProjectFilesPage() {
   const { name } = useParams<{ name: string }>();
   const decodedName = decodeURIComponent(name);
-  const project = mockProjects.find((p: Project) => p.title === decodedName);
+  const { project, loading, error, refreshProject } = useProjectByTitle(decodedName);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <RefreshCw className="h-12 w-12 text-muted-foreground mb-4 animate-spin" />
+        <h2 className="text-xl font-semibold mb-2">Carregando projeto...</h2>
+        <p className="text-muted-foreground">
+          Buscando informações do projeto &quot;{decodedName}&quot;
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Erro ao carregar projeto</h2>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <div className="flex gap-2">
+          <Button onClick={refreshProject}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+          <Link href="/apk/project">
+            <Button variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar aos Projetos
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!project) {
     return (

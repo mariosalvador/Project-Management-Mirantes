@@ -27,6 +27,8 @@ import Link from "next/link";
 import { Project, TeamMember, Task, Milestone } from "@/types/project";
 import { getPriorityColor, getStatusColor } from "@/utils/tasksFormatters";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
+import { useProjects } from "@/hooks/useProjects";
+import { toast } from "sonner";
 
 interface ProjectFormData {
   title: string;
@@ -45,6 +47,7 @@ interface ProjectFormData {
 
 export default function CreateProjectPage() {
   const router = useRouter();
+  const { createNewProject, loading } = useProjects();
 
   // Hook para logging de atividades
   const { logProjectCreated } = useActivityLogger();
@@ -103,25 +106,31 @@ export default function CreateProjectPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    // Aqui você salvaria o projeto
-    console.log("Salvando projeto:", formData);
+    try {
+      // Criar projeto no Firebase
+      const projectId = await createNewProject(formData);
 
-    // Registrar atividade no feed
-    const projectId = Date.now().toString();
-    logProjectCreated({
-      projectId: projectId,
-      projectTitle: formData.title
-    });
+      if (projectId) {
+        // Registrar atividade no feed
+        logProjectCreated({
+          projectId: projectId,
+          projectTitle: formData.title
+        });
 
-    // Simular salvamento e redirecionar
-    router.push("/apk/project");
+        // Redirecionar para a lista de projetos
+        router.push("/apk/project");
+      }
+    } catch (error) {
+      console.error("Erro ao criar projeto:", error);
+      toast.error("Erro ao criar projeto. Tente novamente.");
+    }
   };
 
   const addTeamMember = () => {
@@ -226,12 +235,19 @@ export default function CreateProjectPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push("/apk/project")}>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/apk/project")}
+            disabled={loading}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+          >
             <Save className="h-4 w-4 mr-2" />
-            Criar Projeto
+            {loading ? "Criando..." : "Criar Projeto"}
           </Button>
         </div>
       </div>

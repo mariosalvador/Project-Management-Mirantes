@@ -21,19 +21,21 @@ import {
   AlertTriangle,
   CheckCircle2,
   Play,
-  Pause
+  Pause,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
-import { mockProjects } from "../../mock";
-import { Task, Project, TeamMember } from "@/types/project";
+import { useProjectByTitle } from "@/hooks/useProjects";
+import { updateProject } from "@/Api/services/projects";
+import { Task, TeamMember } from "@/types/project";
 import {
   formatAssignees,
   getPriorityColor,
   getPriorityLabel,
   calculateTaskProgress,
   formatHours,
-  getTasksStats,
-  getTaskStatusLabel
+  getTasksStats
 } from "@/utils/tasksFormatters";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useTaskDeadlineMonitor } from "@/hooks/useTaskMonitoring";
@@ -75,7 +77,7 @@ const taskColumns: TaskColumn[] = [
 export default function ProjectTasksPage() {
   const { name } = useParams<{ name: string }>();
   const decodedName = decodeURIComponent(name);
-  const project = mockProjects.find((p: Project) => p.title === decodedName);
+  const { project, loading, error, refreshProject } = useProjectByTitle(decodedName);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
@@ -84,6 +86,7 @@ export default function ProjectTasksPage() {
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterAssignee, setFilterAssignee] = useState<string>('all');
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
+  const [updatingTasks, setUpdatingTasks] = useState<Set<string>>(new Set());
 
   // Sistema de toast
   const { toast, showToast, hideToast } = useToast();
@@ -95,42 +98,99 @@ export default function ProjectTasksPage() {
   const { logTaskStatusChanged } = useActivityLogger();
 
   // Monitor de prazos de tarefas
-  useTaskDeadlineMonitor(tasks, project);
+  useTaskDeadlineMonitor(tasks, project || undefined);
 
+  // Carregar tarefas do projeto
   useEffect(() => {
-    if (project?.tasks) {
+    if (project && project.tasks) {
       setTasks(project.tasks);
-      setFilteredTasks(project.tasks);
+    } else {
+      setTasks([]);
     }
   }, [project]);
 
   // Filtrar tarefas baseado nos critérios
   useEffect(() => {
-    let filtered = tasks;
+    let filtered = [...tasks];
 
-    // Filtro por busca
-    if (searchTerm.trim()) {
+    // Filtro de pesquisa
+    if (searchTerm) {
       filtered = filtered.filter(task =>
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        task.assignees?.some(assignee =>
+          assignee.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       );
     }
 
-    // Filtro por prioridade
+    // Filtro de prioridade
     if (filterPriority !== 'all') {
       filtered = filtered.filter(task => task.priority === filterPriority);
     }
 
-    // Filtro por responsável
+    // Filtro de responsável
     if (filterAssignee !== 'all') {
       filtered = filtered.filter(task =>
-        task.assignees.includes(filterAssignee)
+        task.assignees?.includes(filterAssignee)
       );
     }
 
     setFilteredTasks(filtered);
   }, [tasks, searchTerm, filterPriority, filterAssignee]);
+
+  // Estados de loading e erro
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <RefreshCw className="h-12 w-12 text-muted-foreground mb-4 animate-spin" />
+        <h2 className="text-xl font-semibold mb-2">Carregando projeto...</h2>
+        <p className="text-muted-foreground">
+          Buscando informações do projeto &quot;{decodedName}&quot;
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Erro ao carregar projeto</h2>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <div className="flex gap-2">
+          <Button onClick={refreshProject}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+          <Link href="/apk/project">
+            <Button variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar aos Projetos
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Projeto não encontrado</h2>
+        <p className="text-muted-foreground mb-4">
+          O projeto &quot;{decodedName}&quot; não foi encontrado.
+        </p>
+        <Link href="/apk/project">
+          <Button>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar aos Projetos
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   // Funções para drag and drop
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
@@ -159,11 +219,16 @@ export default function ProjectTasksPage() {
   };
 
   // Função para mudar status da tarefa com click
-  const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
+  const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task || !project) return;
 
     const oldStatus = task.status;
+    
+    // Adicionar tarefa ao estado de loading
+    setUpdatingTasks(prev => new Set(prev).add(taskId));
+    
+    // Atualizar estado local imediatamente para responsividade
     const updatedTasks = tasks.map(task =>
       task.id === taskId
         ? { ...task, status: newStatus }
@@ -171,24 +236,52 @@ export default function ProjectTasksPage() {
     );
     setTasks(updatedTasks);
 
-    // Feedback visual com toast
-    showToast(`Tarefa "${task.title}" movida para ${getTaskStatusLabel(newStatus)}`, 'success');
+    try {
+      // Atualizar no Firestore
+      await updateProject(project.id, {
+        tasks: updatedTasks,
+        // Recalcular estatísticas do projeto
+        tasksCompleted: updatedTasks.filter(t => t.status === 'completed').length,
+        totalTasks: updatedTasks.length,
+        progress: updatedTasks.length > 0 
+          ? Math.round((updatedTasks.filter(t => t.status === 'completed').length / updatedTasks.length) * 100)
+          : 0
+      });
 
-    // Criar notificação de mudança de status
-    if (project && oldStatus !== newStatus) {
-      notifyTaskStatusChange(task, oldStatus, newStatus, project.title);
+      // Feedback visual com toast
+      showToast(`Tarefa "${task.title}" atualizada com sucesso!`, 'success');
 
-      // Registrar atividade no feed
-      logTaskStatusChanged(
-        {
-          taskId: task.id,
-          taskTitle: task.title,
-          projectId: project.id,
-          projectTitle: project.title
-        },
-        oldStatus,
-        newStatus
-      );
+      // Criar notificação de mudança de status
+      if (oldStatus !== newStatus) {
+        notifyTaskStatusChange(task, oldStatus, newStatus, project.title);
+
+        // Registrar atividade no feed
+        logTaskStatusChanged(
+          {
+            taskId: task.id,
+            taskTitle: task.title,
+            projectId: project.id,
+            projectTitle: project.title
+          },
+          oldStatus,
+          newStatus
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar status da tarefa:", error);
+      
+      // Reverter estado local em caso de erro
+      setTasks(tasks);
+      
+      // Mostrar erro
+      showToast("Erro ao atualizar status da tarefa. Tente novamente.", 'error');
+    } finally {
+      // Remover tarefa do estado de loading
+      setUpdatingTasks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(taskId);
+        return newSet;
+      });
     }
   };
 
@@ -460,6 +553,7 @@ export default function ProjectTasksPage() {
                         task={task}
                         onStatusChange={handleStatusChange}
                         projectTitle={project.title}
+                        isUpdating={updatingTasks.has(task.id)}
                       />
                     </div>
                   ))}
@@ -484,6 +578,7 @@ export default function ProjectTasksPage() {
           tasks={filteredTasks}
           onStatusChange={handleStatusChange}
           projectTitle={project.title}
+          updatingTasks={updatingTasks}
         />
       )}
 
@@ -503,19 +598,27 @@ interface TaskCardProps {
   task: Task;
   onStatusChange: (taskId: string, newStatus: Task['status']) => void;
   projectTitle: string;
+  isUpdating?: boolean;
 }
 
-function TaskCard({ task, onStatusChange, projectTitle }: TaskCardProps) {
+function TaskCard({ task, onStatusChange, projectTitle, isUpdating = false }: TaskCardProps) {
   const progress = calculateTaskProgress(task);
 
   return (
-    <Card className="cursor-grab active:cursor-grabbing hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group">
+    <Card className={`cursor-grab active:cursor-grabbing hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group ${
+      isUpdating ? 'opacity-70 pointer-events-none' : ''
+    }`}>
       <CardContent className="p-4">
         <div className="space-y-3">
           {/* Header */}
           <div className="flex items-start justify-between">
             <h4 className="font-medium text-sm line-clamp-2 flex-1">
               {task.title}
+              {isUpdating && (
+                <span className="ml-2 inline-block">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                </span>
+              )}
             </h4>
             <Link href={`/apk/project/${encodeURIComponent(projectTitle)}/tasks/manage?taskId=${task.id}`}>
               <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10">
@@ -545,11 +648,19 @@ function TaskCard({ task, onStatusChange, projectTitle }: TaskCardProps) {
               onChange={(e) => onStatusChange(task.id, e.target.value as Task['status'])}
               className="text-xs px-2 py-1 border rounded bg-background"
               onClick={(e) => e.stopPropagation()}
+              disabled={isUpdating}
             >
               <option value="pending">Pendente</option>
               <option value="active">Em Progresso</option>
               <option value="completed">Concluída</option>
             </select>
+            
+            {isUpdating && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                <span>Salvando...</span>
+              </div>
+            )}
           </div>
 
           {/* Progresso */}
@@ -623,9 +734,10 @@ interface TaskListViewProps {
   tasks: Task[];
   onStatusChange: (taskId: string, newStatus: Task['status']) => void;
   projectTitle: string;
+  updatingTasks?: Set<string>;
 }
 
-function TaskListView({ tasks, onStatusChange, projectTitle }: TaskListViewProps) {
+function TaskListView({ tasks, onStatusChange, projectTitle, updatingTasks = new Set() }: TaskListViewProps) {
   return (
     <Card>
       <CardHeader>
@@ -646,8 +758,12 @@ function TaskListView({ tasks, onStatusChange, projectTitle }: TaskListViewProps
               </Link>
             </div>
           ) : (
-            tasks.map((task) => (
-              <div key={task.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+            tasks.map((task) => {
+              const isUpdating = updatingTasks.has(task.id);
+              return (
+              <div key={task.id} className={`flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors ${
+                isUpdating ? 'opacity-70' : ''
+              }`}>
                 {/* Status Indicator */}
                 <div className={`w-3 h-3 rounded-full transition-colors ${task.status === 'completed' ? 'bg-green-500' :
                   task.status === 'active' ? 'bg-blue-500' : 'bg-gray-300'
@@ -656,7 +772,14 @@ function TaskListView({ tasks, onStatusChange, projectTitle }: TaskListViewProps
                 {/* Task Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium truncate">{task.title}</h4>
+                    <h4 className="font-medium truncate">
+                      {task.title}
+                      {isUpdating && (
+                        <span className="ml-2 inline-block">
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                        </span>
+                      )}
+                    </h4>
                     {task.priority && (
                       <Badge className={getPriorityColor(task.priority)}>
                         {getPriorityLabel(task.priority)}
@@ -685,11 +808,19 @@ function TaskListView({ tasks, onStatusChange, projectTitle }: TaskListViewProps
                     value={task.status}
                     onChange={(e) => onStatusChange(task.id, e.target.value as Task['status'])}
                     className="text-sm px-2 py-1 border rounded transition-colors hover:border-primary"
+                    disabled={isUpdating}
                   >
                     <option value="pending">Pendente</option>
                     <option value="active">Em Progresso</option>
                     <option value="completed">Concluída</option>
                   </select>
+
+                  {isUpdating && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      <span>Salvando...</span>
+                    </div>
+                  )}
 
                   <Link href={`/apk/project/${encodeURIComponent(projectTitle)}/tasks/manage?taskId=${task.id}`}>
                     <Button variant="ghost" size="sm" className="hover:bg-primary/10">
@@ -698,7 +829,8 @@ function TaskListView({ tasks, onStatusChange, projectTitle }: TaskListViewProps
                   </Link>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </CardContent>

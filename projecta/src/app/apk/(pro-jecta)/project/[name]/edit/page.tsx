@@ -17,19 +17,21 @@ import {
   X,
   Calendar,
   Users,
-  DollarSign,
   Save,
   AlertCircle,
   Briefcase,
   Target,
   Flag,
-  Trash2
+  Trash2,
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { Project, TeamMember, Task, Milestone } from "@/types/project";
-import { mockProjects } from "../../mock";
+import { useProjectByTitle } from "@/hooks/useProjects";
+import { updateProject, deleteProject } from "@/Api/services/projects";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
 import { getPriorityColor, getStatusColor, getTaskStatusColor } from "@/utils/tasksFormatters";
+import { toast } from "sonner";
 
 interface ProjectFormData {
   title: string;
@@ -51,7 +53,7 @@ export default function EditProjectPage() {
   const { name } = useParams<{ name: string }>();
 
   const decodedName = decodeURIComponent(name);
-  const project = mockProjects.find(p => p.title === decodedName);
+  const { project, loading, error, refreshProject } = useProjectByTitle(decodedName);
 
   // Hook para logging de atividades
   const { logProjectUpdated } = useActivityLogger();
@@ -149,32 +151,42 @@ export default function EditProjectPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    if (!validateForm() || !project) {
       return;
     }
 
-    // Aqui você salvaria as alterações do projeto
-    console.log("Salvando alterações do projeto:", formData);
+    try {
+      // Atualizar projeto no Firestore
+      await updateProject(project.id, formData);
 
-    // Registrar atividade no feed
-    if (project) {
+      // Registrar atividade no feed
       logProjectUpdated({
         projectId: project.id,
         projectTitle: formData.title
       });
-    }
 
-    // Simular salvamento e redirecionar
-    router.push(`/apk/project/${project.title}`);
+      toast.success("Projeto atualizado com sucesso!");
+      router.push(`/apk/project/${encodeURIComponent(formData.title)}`);
+    } catch (error) {
+      console.error("Erro ao atualizar projeto:", error);
+      toast.error("Erro ao atualizar projeto");
+    }
   };
 
-  const handleDelete = () => {
-    // Aqui você deletaria o projeto
-    console.log("Deletando projeto:", project.id);
-    router.push("/apk/project");
+  const handleDelete = async () => {
+    if (!project) return;
+
+    try {
+      await deleteProject(project.id);
+      toast.success("Projeto removido com sucesso!");
+      router.push("/apk/project");
+    } catch (error) {
+      console.error("Erro ao deletar projeto:", error);
+      toast.error("Erro ao deletar projeto");
+    }
   };
 
   const addTeamMember = () => {
@@ -271,6 +283,59 @@ export default function EditProjectPage() {
     }));
   };
 
+  // Estados de loading e erro
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <RefreshCw className="h-12 w-12 text-muted-foreground mb-4 animate-spin" />
+        <h2 className="text-xl font-semibold mb-2">Carregando projeto...</h2>
+        <p className="text-muted-foreground">
+          Buscando informações do projeto &quot;{decodedName}&quot;
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Erro ao carregar projeto</h2>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <div className="flex gap-2">
+          <Button onClick={refreshProject}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+          <Link href="/apk/project">
+            <Button variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar aos Projetos
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Projeto não encontrado</h2>
+        <p className="text-muted-foreground mb-4">
+          O projeto &quot;{decodedName}&quot; não foi encontrado.
+        </p>
+        <Link href="/apk/project">
+          <Button>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar aos Projetos
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="container">
       {/* Breadcrumb */}
@@ -278,7 +343,7 @@ export default function EditProjectPage() {
         <Breadcrumb
           items={[
             { label: "Projetos", href: "/apk/project" },
-            { label: project.title, href: `/apk/project/${project.title}` },
+            { label: project.title, href: `/apk/project/${encodeURIComponent(project.title)}` },
             { label: "Editar" }
           ]}
         />
@@ -696,22 +761,6 @@ export default function EditProjectPage() {
                       {errors.dueDate}
                     </p>
                   )}
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label htmlFor="budget">Orçamento</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="budget"
-                      value={formData.budget}
-                      onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
-                      placeholder="R$ 0,00"
-                      className="pl-9"
-                    />
-                  </div>
                 </div>
               </CardContent>
             </Card>

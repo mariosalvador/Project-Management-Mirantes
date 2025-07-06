@@ -1,5 +1,5 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, User } from "firebase/auth"
-import { doc, setDoc } from "firebase/firestore"
+import { doc, setDoc, getDoc } from "firebase/firestore"
 import { auth, db } from "./firebase"
 
 const googleProvider = new GoogleAuthProvider()
@@ -15,7 +15,17 @@ const saveUserToFirestore = async (user: User, provider: 'email' | 'google') => 
       displayName: user.displayName || null,
       photoURL: user.photoURL || null,
       lastLoginAt: now.toISOString(),
-      provider
+      provider,
+      role: 'admin', // Todo usuário que cria um projeto se torna admin automaticamente
+      permissions: {
+        canCreateProject: true,
+        canEditProject: true,
+        canDeleteProject: true,
+        canManageTeam: true,
+        canManageTasks: true,
+        canViewAnalytics: true,
+        isAdmin: true
+      }
     }
 
     const userData = provider === 'email'
@@ -45,4 +55,21 @@ export const signInWithGoogle = async () => {
   const userCredential = await signInWithPopup(auth, googleProvider)
   await saveUserToFirestore(userCredential.user, 'google')
   return userCredential.user
+}
+
+// Função para buscar informações do usuário por UID
+export const getUserInfo = async (uid: string) => {
+  try {
+    const userRef = doc(db, 'users', uid)
+    const userSnap = await getDoc(userRef)
+
+    if (userSnap.exists()) {
+      return userSnap.data()
+    }
+
+    return null
+  } catch (error) {
+    console.error('Erro ao buscar informações do usuário:', error)
+    return null
+  }
 }

@@ -21,13 +21,15 @@ import {
   AlertCircle,
   Target,
   Tag,
-  Link2
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
-import { Project, TeamMember, Task } from "@/types/project";
-import { mockProjects } from "../../../mock";
+import { TeamMember, Task } from "@/types/project";
+import { useProjectByTitle } from "@/hooks/useProjects";
+import { updateProject } from "@/Api/services/projects";
 import { getPriorityColor, getPriorityLabel, getStatusColor, getStatusLabel } from "@/utils/tasksFormatters";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
+import { toast } from "sonner";
 
 interface TaskFormData {
   title: string;
@@ -50,7 +52,7 @@ export default function TaskManagePage() {
   const taskId = searchParams.get('taskId');
 
   const decodedName = decodeURIComponent(name);
-  const project = mockProjects.find((p: Project) => p.title === decodedName);
+  const { project, loading, error, refreshProject } = useProjectByTitle(decodedName);
   const isEditing = !!taskId;
   const existingTask = project?.tasks?.find((t: Task) => t.id === taskId);
 
@@ -93,6 +95,41 @@ export default function TaskManagePage() {
     }
   }, [isEditing, existingTask]);
 
+  // Estados de loading e erro
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <RefreshCw className="h-12 w-12 text-muted-foreground mb-4 animate-spin" />
+        <h2 className="text-xl font-semibold mb-2">Carregando projeto...</h2>
+        <p className="text-muted-foreground">
+          Buscando informações do projeto &quot;{decodedName}&quot;
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Erro ao carregar projeto</h2>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <div className="flex gap-2">
+          <Button onClick={refreshProject}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+          <Link href="/apk/project">
+            <Button variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar aos Projetos
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!project) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
@@ -128,50 +165,60 @@ export default function TaskManagePage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    if (!validateForm() || !project) {
       return;
     }
 
-    const taskData: Task = {
-      id: isEditing ? taskId! : Date.now().toString(),
-      title: formData.title,
-      description: formData.description,
-      status: formData.status,
-      priority: formData.priority,
-      assignees: formData.assignees,
-      dueDate: formData.dueDate,
-      startDate: formData.startDate,
-      estimatedHours: formData.estimatedHours,
-      actualHours: formData.actualHours,
-      tags: formData.tags,
-      dependencies: formData.dependencies
-    };
+    try {
+      const taskData: Task = {
+        id: isEditing ? taskId! : Date.now().toString(),
+        title: formData.title,
+        description: formData.description,
+        status: formData.status,
+        priority: formData.priority,
+        assignees: formData.assignees,
+        dueDate: formData.dueDate,
+        startDate: formData.startDate,
+        estimatedHours: formData.estimatedHours,
+        actualHours: formData.actualHours,
+        tags: formData.tags,
+        dependencies: formData.dependencies
+      };
 
-    // Aqui você salvaria a tarefa
-    console.log(isEditing ? "Atualizando tarefa:" : "Criando tarefa:", taskData);
+      // Atualizar lista de tarefas no projeto
+      const updatedTasks = isEditing
+        ? (project.tasks || []).map(task => task.id === taskId ? taskData : task)
+        : [...(project.tasks || []), taskData];
 
-    // Registrar atividade no feed
-    if (isEditing) {
-      logTaskUpdated({
-        taskId: taskData.id,
-        taskTitle: taskData.title,
-        projectId: project.id,
-        projectTitle: project.title
-      });
-    } else {
-      logTaskCreated({
-        taskId: taskData.id,
-        taskTitle: taskData.title,
-        projectId: project.id,
-        projectTitle: project.title
-      });
+      // Salvar no Firestore
+      await updateProject(project.id, { tasks: updatedTasks });
+
+      // Registrar atividade no feed
+      if (isEditing) {
+        logTaskUpdated({
+          taskId: taskData.id,
+          taskTitle: taskData.title,
+          projectId: project.id,
+          projectTitle: project.title
+        });
+      } else {
+        logTaskCreated({
+          taskId: taskData.id,
+          taskTitle: taskData.title,
+          projectId: project.id,
+          projectTitle: project.title
+        });
+      }
+
+      toast.success(isEditing ? "Tarefa atualizada com sucesso!" : "Tarefa criada com sucesso!");
+      router.push(`/apk/project/${encodeURIComponent(project.title)}/tasks`);
+    } catch (error) {
+      console.error("Erro ao salvar tarefa:", error);
+      toast.error("Erro ao salvar tarefa");
     }
-
-    // Simular salvamento e redirecionar
-    router.push(`/apk/project/${encodeURIComponent(project.title)}`);
   };
 
   const addTag = () => {
@@ -318,34 +365,6 @@ export default function TaskManagePage() {
                     )}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="estimatedHours">Horas Estimadas</Label>
-                    <Input
-                      id="estimatedHours"
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={formData.estimatedHours}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedHours: parseFloat(e.target.value) || 0 }))}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="actualHours">Horas Trabalhadas</Label>
-                    <Input
-                      id="actualHours"
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={formData.actualHours}
-                      onChange={(e) => setFormData(prev => ({ ...prev, actualHours: parseFloat(e.target.value) || 0 }))}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -453,22 +472,6 @@ export default function TaskManagePage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Dependências */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Link2 className="h-5 w-5" />
-                  Dependências
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground">
-                  <p>Funcionalidade de dependências será implementada em versão futura.</p>
-                  <p>Aqui você poderá selecionar outras tarefas das quais esta tarefa depende.</p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Barra Lateral */}
@@ -534,14 +537,6 @@ export default function TaskManagePage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tags:</span>
                   <span className="font-medium">{formData.tags.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Horas estimadas:</span>
-                  <span className="font-medium">{formData.estimatedHours}h</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Horas trabalhadas:</span>
-                  <span className="font-medium">{formData.actualHours}h</span>
                 </div>
                 {formData.estimatedHours > 0 && (
                   <div className="flex justify-between">

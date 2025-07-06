@@ -13,14 +13,14 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, className }: ProjectCardProps) {
-  
+
   return (
     <Card className={cn(
       "group hover:shadow-md transition-all duration-200 cursor-pointer",
       "w-full",
       className
     )}>
-      <Link href={`/apk/project/${project.title}`}>
+      <Link href={`/apk/project/${encodeURIComponent(project.title)}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
