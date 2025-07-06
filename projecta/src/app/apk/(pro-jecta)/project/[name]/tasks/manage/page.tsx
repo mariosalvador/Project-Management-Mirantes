@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,8 +48,14 @@ interface TaskFormData {
 export default function TaskManagePage() {
   const router = useRouter();
   const { name } = useParams<{ name: string }>();
-  const searchParams = useSearchParams();
-  const taskId = searchParams.get('taskId');
+  const [taskId, setTaskId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      setTaskId(urlParams.get('taskId'));
+    }
+  }, []);
 
   const decodedName = decodeURIComponent(name);
   const { project, loading, error, refreshProject } = useProjectByTitle(decodedName);
@@ -75,7 +81,6 @@ export default function TaskManagePage() {
   const [newTag, setNewTag] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Carregar dados da tarefa existente se estiver editando
   useEffect(() => {
     if (isEditing && existingTask) {
       setFormData({
