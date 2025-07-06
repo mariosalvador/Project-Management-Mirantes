@@ -4,6 +4,11 @@ import { useState, useContext, createContext, ReactNode, useEffect } from 'react
 import { User, UserRole, PermissionAction, DEFAULT_PERMISSIONS } from '../types/collaboration';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Interface para timestamp do Firebase
+interface FirebaseTimestamp {
+  toDate(): Date;
+}
+
 interface PermissionContextType {
   currentUser: User | null;
   users: User[];
@@ -24,6 +29,32 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
   // Sincronizar com dados de autenticação
   useEffect(() => {
     if (user && userData) {
+      // Função para validar e converter data
+      const getValidDate = (dateValue: unknown): string => {
+        try {
+          if (!dateValue) return new Date().toISOString();
+
+          // Se for um timestamp do Firebase
+          if (typeof dateValue === 'object' && dateValue !== null && 'toDate' in dateValue && typeof (dateValue as FirebaseTimestamp).toDate === 'function') {
+            return (dateValue as FirebaseTimestamp).toDate().toISOString();
+          }
+
+          // Se for uma string ou número, tentar converter
+          if (typeof dateValue === 'string' || typeof dateValue === 'number' || dateValue instanceof Date) {
+            const date = new Date(dateValue);
+            if (isNaN(date.getTime())) {
+              return new Date().toISOString();
+            }
+            return date.toISOString();
+          }
+
+          return new Date().toISOString();
+        } catch (error) {
+          console.warn('Erro ao converter data:', error);
+          return new Date().toISOString();
+        }
+      };
+
       const authUser: User = {
         id: user.uid,
         name: userData.displayName || user.displayName || 'Usuário',
@@ -31,7 +62,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
         avatar: userData.photoURL || user.photoURL || undefined,
         role: 'admin', // Por padrão, primeiro usuário é admin - isso deveria vir do banco
         isActive: true,
-        createdAt: userData.createdAt?.toISOString() || new Date().toISOString(),
+        createdAt: getValidDate(userData.createdAt),
         lastActive: new Date().toISOString(),
         permissions: DEFAULT_PERMISSIONS.admin
       };

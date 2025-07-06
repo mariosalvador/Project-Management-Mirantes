@@ -22,10 +22,9 @@ import {
 } from '@/types/collaboration';
 import { Project } from '@/types/project';
 
-// Interfaces específicas para colaboração
 export interface CollaborationData {
   id: string;
-  contextId: string; // ID do projeto ou tarefa
+  contextId: string; 
   contextType: 'project' | 'task';
   contextTitle: string;
   membersIds: string[];
@@ -163,7 +162,6 @@ export const addComment = async (
   comment: Omit<Comment, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> => {
   try {
-    // Criar o comentário garantindo que não há valores undefined
     const newComment: Comment = {
       id: Date.now().toString(),
       content: comment.content,

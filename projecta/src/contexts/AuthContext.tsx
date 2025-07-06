@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, onAuthStateChanged, signOut } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { auth, db } from '@/Api/services/firebase'
+import { setAuthCookie, clearAuthCookies } from '@/utils/auth-cookies'
 
 interface UserData {
   uid: string
@@ -19,6 +20,7 @@ interface AuthContextType {
   user: User | null
   userData: UserData | null
   loading: boolean
+  isAuthenticated: boolean
   logout: () => Promise<void>
 }
 
@@ -65,8 +67,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await signOut(auth)
       setUser(null)
       setUserData(null)
+      clearAuthCookies()
+      window.location.href = '/auth/login'
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
+      throw error
     }
   }
 
@@ -76,8 +81,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (user) {
         await loadUserData(user)
+        setAuthCookie(user)
       } else {
         setUserData(null)
+        clearAuthCookies()
       }
 
       setLoading(false)
@@ -90,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     userData,
     loading,
+    isAuthenticated: !!user,
     logout
   }
 

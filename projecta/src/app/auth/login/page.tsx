@@ -14,6 +14,7 @@ import Link from "next/link"
 import { LogoProject } from "../../../../public/assets/logo"
 import { signIn, signInWithGoogle } from "@/Api/services/auth"
 import { PublicRoute } from "@/components/auth/RouteProtection"
+import { validateLoginForm, handleFirebaseAuthError, handleGoogleSignInError } from "@/utils/authValidation"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -27,6 +28,14 @@ export default function LoginPage() {
     setIsLoading(true)
     setError("")
 
+    // Validar campos do formulário
+    const validation = validateLoginForm(email, password)
+    if (!validation.isValid) {
+      setError(validation.error || "Dados inválidos")
+      setIsLoading(false)
+      return
+    }
+
     try {
       const user = await signIn(email, password);
 
@@ -35,23 +44,8 @@ export default function LoginPage() {
       }
     } catch (err: unknown) {
       console.error("Login error:", err)
-
-      const firebaseErr = err as { code?: string }
-      if (firebaseErr.code === 'auth/operation-not-allowed') {
-        setError("Método de autenticação não habilitado. Contate o administrador.")
-      } else if (firebaseErr.code === 'auth/user-not-found') {
-        setError("Usuário não encontrado")
-      } else if (firebaseErr.code === 'auth/wrong-password') {
-        setError("Senha incorreta")
-      } else if (firebaseErr.code === 'auth/invalid-email') {
-        setError("Email inválido")
-      } else if (firebaseErr.code === 'auth/user-disabled') {
-        setError("Conta desabilitada")
-      } else if (firebaseErr.code === 'auth/too-many-requests') {
-        setError("Muitas tentativas. Tente novamente mais tarde.")
-      } else {
-        setError("Erro ao fazer login. Tente novamente.")
-      }
+      const errorMessage = handleFirebaseAuthError(err)
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -69,20 +63,8 @@ export default function LoginPage() {
       }
     } catch (err: unknown) {
       console.error("Google login error:", err)
-
-      // Tratamento de erros específicos do Firebase para Google
-      const firebaseErr = err as { code?: string }
-      if (firebaseErr.code === 'auth/operation-not-allowed') {
-        setError("Login com Google não habilitado. Contate o administrador.")
-      } else if (firebaseErr.code === 'auth/popup-closed-by-user') {
-        setError("Login cancelado pelo usuário")
-      } else if (firebaseErr.code === 'auth/popup-blocked') {
-        setError("Pop-up bloqueado. Permita pop-ups para este site.")
-      } else if (firebaseErr.code === 'auth/cancelled-popup-request') {
-        setError("Requisição cancelada")
-      } else {
-        setError("Erro ao fazer login com Google. Tente novamente.")
-      }
+      const errorMessage = handleGoogleSignInError(err)
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -135,8 +117,8 @@ export default function LoginPage() {
 
             <div className="mt-4 text-center text-sm">
               Não tem uma conta?{" "}
-              <Link href="/auth/register" className="text-primary underline">
-                Cadastre-se
+              <Link href="/auth/register" className="text-primary underline hover:text-primary/80">
+                Cadastre-se aqui
               </Link>
             </div>
 

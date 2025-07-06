@@ -30,32 +30,25 @@ export const sendMemberInvite = async (
   message?: string
 ): Promise<MemberInvitation> => {
   try {
-    console.log('Iniciando sendMemberInvite com parâmetros:', { email, defaultRole, invitedBy, invitedByName, invitedByEmail });
-
     // Validação de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new Error('Por favor, insira um email válido');
     }
 
-    // Validação: impedir auto-convite
     if (email.toLowerCase().trim() === invitedByEmail.toLowerCase().trim()) {
       throw new Error('Você não pode enviar um convite para si mesmo');
     }
 
-    // Validação de parâmetros obrigatórios
     if (!invitedBy || !invitedByName || !invitedByEmail) {
       throw new Error('Dados do usuário que está enviando o convite são obrigatórios');
     }
 
-    console.log('Verificando convite existente...');
-    // Verificar se já existe um convite pendente ou se o usuário já é membro
     const existingInvite = await checkExistingMemberInvite(email, invitedBy);
     if (existingInvite) {
       throw new Error('Já existe um convite pendente para este usuário');
     }
 
-    console.log('Verificando membro existente...');
     const existingMember = await checkExistingMember(email, invitedBy);
     if (existingMember) {
       throw new Error('Este usuário já é seu membro');
@@ -75,18 +68,15 @@ export const sendMemberInvite = async (
       invitedAt: now.toISOString(),
       status: 'pending',
       expiresAt: expiresAt.toISOString(),
-      ...(message && { message }) // Só inclui message se tiver valor
+      ...(message && { message })
     };
 
-    console.log('Salvando convite no Firestore:', invitation);
     const inviteRef = doc(db, 'member_invitations', inviteId);
     await setDoc(inviteRef, invitation);
 
-    console.log('Criando notificação...');
     // Criar notificação se o usuário já existir
     await createMemberInviteNotification(email, invitation);
 
-    console.log('Convite enviado com sucesso:', inviteId);
     return invitation;
   } catch (error) {
     console.error('Erro detalhado ao enviar convite de membro:', error);

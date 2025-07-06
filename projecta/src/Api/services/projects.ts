@@ -47,8 +47,8 @@ export interface ProjectWithFirebaseData {
   tasksCompleted?: number
   totalTasks?: number
   createdBy: string
-  createdAt: unknown // Firebase Timestamp or FieldValue
-  updatedAt: unknown // Firebase Timestamp or FieldValue
+  createdAt: unknown 
+  updatedAt: unknown 
   isArchived?: boolean
 }
 
@@ -83,22 +83,17 @@ export const createProject = async (
 // Buscar todos os projetos do usuário (criados por ele ou onde ele é membro da equipe)
 export const getUserProjects = async (userId: string): Promise<Project[]> => {
   try {
-    console.log('getUserProjects: Iniciando busca para usuário:', userId)
-
-    // Buscar projetos criados pelo usuário (query simplificada)
     const createdByUserQuery = query(
       collection(db, PROJECTS_COLLECTION),
       where("createdBy", "==", userId)
     )
 
-    console.log('getUserProjects: Executando query para projetos criados pelo usuário')
     const createdByUserSnapshot = await getDocs(createdByUserQuery)
 
     const createdProjects: Project[] = []
 
     createdByUserSnapshot.docs.forEach(doc => {
       const data = doc.data()
-      // Apenas incluir projetos não arquivados
       if (!data.isArchived) {
         createdProjects.push({
           id: doc.id,
@@ -106,8 +101,6 @@ export const getUserProjects = async (userId: string): Promise<Project[]> => {
         } as Project)
       }
     })
-
-    console.log('getUserProjects: Projetos criados encontrados:', createdProjects.length)
 
     return createdProjects
   } catch (error) {
@@ -139,17 +132,13 @@ export const getProject = async (projectId: string): Promise<Project | null> => 
 // Buscar projeto por título
 export const getProjectByTitle = async (title: string): Promise<Project | null> => {
   try {
-    console.log('getProjectByTitle: Buscando projeto com título:', title)
-
     const projectQuery = query(
       collection(db, PROJECTS_COLLECTION),
       where("title", "==", title)
     )
-
     const querySnapshot = await getDocs(projectQuery)
 
     if (querySnapshot.empty) {
-      console.log('getProjectByTitle: Nenhum projeto encontrado com o título:', title)
       return null
     }
 
@@ -160,7 +149,6 @@ export const getProjectByTitle = async (title: string): Promise<Project | null> 
       ...doc.data()
     } as Project
 
-    console.log('getProjectByTitle: Projeto encontrado:', project.id)
     return project
   } catch (error) {
     console.error("getProjectByTitle: Erro ao buscar projeto por título:", error)

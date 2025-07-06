@@ -27,7 +27,6 @@ export interface TeamInvitation {
   declinedAt?: string;
 }
 
-// Enviar convite para um usuário
 export const sendTeamInvite = async (
   email: string,
   role: UserRole,
@@ -38,7 +37,6 @@ export const sendTeamInvite = async (
   currentUserEmail?: string
 ): Promise<TeamInvitation> => {
   try {
-    // Validação: impedir auto-convite
     if (currentUserEmail && email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()) {
       throw new Error('Você não pode enviar um convite para si mesmo');
     }
@@ -88,7 +86,6 @@ const createInviteNotificationIfUserExists = async (email: string, invitation: T
       const notificationExists = await notificationExistsForInvite(userId, invitation.id);
 
       if (!notificationExists) {
-        // Criar notificação
         const notificationId = `invite_${invitation.id}_${userId}_${Date.now()}`;
         const notificationRef = doc(db, 'notifications', notificationId);
 
@@ -111,10 +108,7 @@ const createInviteNotificationIfUserExists = async (email: string, invitation: T
           }
         });
 
-        console.log(`Notificação de convite criada para usuário existente: ${email}`);
       }
-    } else {
-      console.log(`Usuário ${email} ainda não possui conta. Convite ficará pendente até a criação da conta.`);
     }
   } catch (error) {
     console.error('Erro ao criar notificação de convite:', error);
@@ -124,7 +118,6 @@ const createInviteNotificationIfUserExists = async (email: string, invitation: T
 // Buscar convites pendentes de um projeto (apenas para quem criou os convites)
 export const getProjectInvites = async (projectId: string, currentUserId?: string): Promise<TeamInvitation[]> => {
   try {
-    console.log('getProjectInvites chamado com:', { projectId, currentUserId });
 
     const invitesRef = collection(db, 'team_invitations');
     // Simplificar a query para evitar índices compostos
@@ -138,12 +131,8 @@ export const getProjectInvites = async (projectId: string, currentUserId?: strin
 
     querySnapshot.forEach((doc) => {
       const data = doc.data() as TeamInvitation;
-      console.log('Convite encontrado:', { id: doc.id, invitedBy: data.invitedBy, currentUserId, email: data.email });
-
-      // Validação de segurança: apenas quem enviou o convite pode ver
       if (currentUserId && data.invitedBy !== currentUserId) {
-        console.log('Convite filtrado (não é do usuário atual)');
-        return; // Pula este convite
+        return;
       }
 
       // Verificar se o convite expirou
@@ -155,8 +144,6 @@ export const getProjectInvites = async (projectId: string, currentUserId?: strin
         updateInviteStatus(data.id, 'expired');
         data.status = 'expired';
       }
-
-      console.log('Convite incluído na lista');
       invites.push({ ...data, id: doc.id });
     });
 
@@ -165,7 +152,6 @@ export const getProjectInvites = async (projectId: string, currentUserId?: strin
       .filter(invite => invite.status === 'pending')
       .sort((a, b) => new Date(b.invitedAt).getTime() - new Date(a.invitedAt).getTime());
 
-    console.log(`Retornando ${filteredInvites.length} convites filtrados`);
     return filteredInvites;
   } catch (error) {
     console.error('Erro ao buscar convites do projeto:', error);
@@ -176,14 +162,11 @@ export const getProjectInvites = async (projectId: string, currentUserId?: strin
 // Buscar convites de um usuário (apenas seus próprios convites)
 export const getUserInvites = async (email: string, currentUserEmail?: string): Promise<TeamInvitation[]> => {
   try {
-    // Validação de segurança: usuário só pode ver seus próprios convites
     if (currentUserEmail && email.toLowerCase() !== currentUserEmail.toLowerCase()) {
-      console.warn('Usuário tentando acessar convites de outro usuário');
       return [];
     }
 
     const invitesRef = collection(db, 'team_invitations');
-    // Simplificar a query para evitar índices compostos
     const q = query(
       invitesRef,
       where('email', '==', email.toLowerCase())
@@ -279,7 +262,6 @@ export const acceptInvite = async (inviteId: string, acceptingUserId: string, ac
       }
     });
 
-    console.log(`Convite ${inviteId} aceito com sucesso. Usuário ${acceptingUserName} adicionado ao projeto ${invite.projectId}`);
     return true;
   } catch (error) {
     console.error('Erro ao aceitar convite:', error);
@@ -430,7 +412,6 @@ const notificationExistsForInvite = async (userId: string, inviteId: string): Pr
 // Verificar convites pendentes ao fazer login ou criar conta
 export const checkPendingInvitesOnLogin = async (email: string, userId: string, isNewUser: boolean = false) => {
   try {
-    console.log(`Verificando convites pendentes para ${email}, usuário novo: ${isNewUser}`);
 
     // Buscar convites pendentes para este email (sem restrições de segurança)
     const invitesRef = collection(db, 'team_invitations');
@@ -452,17 +433,14 @@ export const checkPendingInvitesOnLogin = async (email: string, userId: string, 
       if (now > expiresAt) {
         // Marcar como expirado
         await updateInviteStatus(invite.id, 'expired');
-        console.log(`Convite ${invite.id} expirado`);
       } else {
         pendingInvites.push({ ...invite, id: docSnap.id });
       }
     }
 
-    console.log(`Encontrados ${pendingInvites.length} convites pendentes válidos`);
 
     // Criar notificações para convites pendentes (evitando duplicatas)
     for (const invite of pendingInvites) {
-      // Verificar se já existe notificação para este convite
       const notificationExists = await notificationExistsForInvite(userId, invite.id);
 
       if (!notificationExists) {
@@ -492,9 +470,6 @@ export const checkPendingInvitesOnLogin = async (email: string, userId: string, 
           }
         });
 
-        console.log(`Notificação criada para convite ${invite.id}`);
-      } else {
-        console.log(`Notificação já existe para convite ${invite.id}`);
       }
     }
 

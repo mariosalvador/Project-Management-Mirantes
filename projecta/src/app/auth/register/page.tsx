@@ -12,8 +12,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { LogoProject } from "../../../../public/assets/logo"
-import { signUp } from "@/Api/services/auth"
+import { signUp, checkUserExists } from "@/Api/services/auth"
 import { PublicRoute } from "@/components/auth/RouteProtection"
+import { validateRegistrationForm, validateEmail, handleFirebaseAuthError, getSuccessMessage } from "@/utils/authValidation"
 
 export default function RegisterPage() {
   const [name, setName] = useState("")
@@ -22,36 +23,69 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [emailError, setEmailError] = useState("")
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false)
   const router = useRouter()
+
+  const handleEmailBlur = async () => {
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      setEmailError(emailValidation.error || "Email inválido")
+      return
+    }
+
+    if (email && email.includes('@')) {
+      setIsCheckingEmail(true)
+      setEmailError("")
+
+      try {
+        const exists = await checkUserExists(email)
+        if (exists) {
+          setEmailError("Este email já está cadastrado. Tente fazer login.")
+        }
+      } catch (error) {
+        console.error('Erro ao verificar email:', error)
+        setEmailError("Erro ao verificar email. Tente novamente.")
+      } finally {
+        setIsCheckingEmail(false)
+      }
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+    setSuccess("")
 
-    if (password !== confirmPassword) {
-      setError("As senhas não coincidem")
+    if (emailError) {
+      setError("Corrija os erros antes de continuar.")
       setIsLoading(false)
       return
     }
 
-    if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres")
+    const validation = validateRegistrationForm(name, email, password, confirmPassword)
+    if (!validation.isValid) {
+      setError(validation.error || "Dados inválidos")
       setIsLoading(false)
       return
     }
 
     try {
-      const success = await signUp(email, password);
+      const user = await signUp(email, password);
 
-      if (success) {
-        router.push("/auth/login")
-      } else {
-        setError("Este email já está em uso")
+      if (user) {
+        const successMessage = getSuccessMessage('register')
+        setSuccess(successMessage)
+        setTimeout(() => {
+          router.push("/auth/login")
+        }, 2000)
       }
-    } catch (err) {
-      console.error("Erro ao criar conta:", err)
-      setError("Erro ao criar conta")
+    } catch (err: unknown) {
+      console.error("Registration error:", err)
+      const errorMessage = handleFirebaseAuthError(err)
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -74,6 +108,12 @@ export default function RegisterPage() {
                 </Alert>
               )}
 
+              {success && (
+                <Alert className="border-green-200 bg-green-50">
+                  <AlertDescription className="text-green-800">{success}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="name">Nome completo</Label>
                 <Input
@@ -93,9 +133,19 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="seu@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    setEmailError("") // Limpar erro ao digitar
+                  }}
+                  onBlur={handleEmailBlur}
                   required
                 />
+                {isCheckingEmail && (
+                  <p className="text-xs text-muted-foreground">Verificando email...</p>
+                )}
+                {emailError && (
+                  <p className="text-xs text-red-600">{emailError}</p>
+                )}
               </div>
 
               <div className="space-y-2">

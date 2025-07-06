@@ -77,7 +77,6 @@ export const getUserNotifications = async (userId: string, limitCount: number = 
       notifications.push({ ...data, id: doc.id });
     });
 
-    // Ordenar no cliente para evitar índice composto
     return notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (error) {
     console.error('Erro ao buscar notificações:', error);
@@ -89,7 +88,6 @@ export const getUserNotifications = async (userId: string, limitCount: number = 
 export const getUnreadNotifications = async (userId: string): Promise<NotificationData[]> => {
   try {
     const notificationsRef = collection(db, 'notifications');
-    // Simplificar a query para evitar índices compostos
     const q = query(
       notificationsRef,
       where('userId', '==', userId),

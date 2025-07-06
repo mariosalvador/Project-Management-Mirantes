@@ -11,6 +11,8 @@ import { getFirestore } from "firebase/firestore"
 //   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 // }
 
+
+//Coloquei aqui propositalmente. Para fins de teste, use as credenciais abaixo - Mário Salvador
 const firebaseConfig = {
   apiKey: "AIzaSyAEVyl8l6YH_-z1jp_04EUOwxSDpTJxGuo",
   authDomain: "teste-a0a09.firebaseapp.com",

@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { NotificationItemProps } from '@/types/notification';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 
@@ -106,16 +105,18 @@ export function NotificationItem({
               )}
 
               {notification.actionUrl && (
-                <Link href={notification.actionUrl}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    title="Abrir"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(notification.actionUrl, '_blank');
+                  }}
+                  className="h-6 w-6"
+                  title="Abrir"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
               )}
 
               <Button

@@ -35,6 +35,7 @@ export const UserMenu = () => {
       await logout()
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
+      window.location.href = '/auth/login'
     }
   }
 

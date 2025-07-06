@@ -34,7 +34,6 @@ export function NotificationCenter() {
     deleteNotification,
   } = useNotifications();
 
-  // Estado local para filtro simples
   const [currentFilter, setCurrentFilter] = useState<NotificationFilter>('all');
 
   // Filtrar notificações localmente
@@ -76,7 +75,7 @@ export function NotificationCenter() {
 
   return (
     <Dialog>
-      <DialogTrigger>
+      <DialogTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
