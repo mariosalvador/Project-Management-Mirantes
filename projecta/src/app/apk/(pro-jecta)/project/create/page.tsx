@@ -65,7 +65,6 @@ export default function CreateProjectPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [warnings, setWarnings] = useState<Record<string, string>>({});
 
-  // Função para validação em tempo real de datas
   // Função para limpar erros específicos quando o usuário corrige um campo
   const clearFieldError = (fieldName: string) => {
     if (errors[fieldName]) {
@@ -205,16 +204,6 @@ export default function CreateProjectPage() {
       newErrors.category = "Categoria deve ter no máximo 50 caracteres";
     }
 
-    // Validação de orçamento (se fornecido)
-    if (formData.budget.trim()) {
-      const budgetNum = parseFloat(formData.budget.replace(/[^\d.]/g, ''));
-      if (isNaN(budgetNum) || budgetNum < 0) {
-        newErrors.budget = "Orçamento deve ser um valor numérico válido";
-      } else if (budgetNum > 999999999) {
-        newErrors.budget = "Orçamento não pode exceder 999.999.999";
-      }
-    }
-
     // Validação de marcos
     if (formData.milestones.length > 0) {
       formData.milestones.forEach((milestone, index) => {
@@ -283,7 +272,7 @@ export default function CreateProjectPage() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Link href="/apk/project">
             <Button variant="ghost" size="icon">
@@ -400,23 +389,6 @@ export default function CreateProjectPage() {
                       <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {errors.manager}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <Label htmlFor="budget">Orçamento (Opcional)</Label>
-                    <Input
-                      id="budget"
-                      value={formData.budget}
-                      onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
-                      placeholder="Ex: 50000, R$ 100.000"
-                      className={errors.budget ? "border-red-500" : ""}
-                    />
-                    {errors.budget && (
-                      <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        {errors.budget}
                       </p>
                     )}
                   </div>

@@ -104,7 +104,7 @@ export default function ProjectTasksManager({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Formulário para adicionar nova tarefa */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-muted/50">
+        <div className="flex flex-col xl:flex-row gap-4 p-4 border rounded-lg bg-muted/50">
           <div>
             <Label htmlFor="taskTitle">Título da Tarefa</Label>
             <Input

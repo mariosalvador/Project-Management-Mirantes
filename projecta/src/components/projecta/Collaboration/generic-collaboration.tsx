@@ -27,7 +27,7 @@ interface GenericCollaborationProps {
   contextId: string;
   contextType: 'project' | 'task';
   contextTitle: string;
-  membersIds?: string[]; // IDs dos membros que podem colaborar
+  membersIds?: string[]; 
   className?: string;
 }
 
@@ -131,7 +131,7 @@ export function GenericCollaboration({
       {/* Cabeçalho */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col xl:flex-row items-center justify-between">
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
@@ -141,7 +141,7 @@ export function GenericCollaboration({
                 {contextMembers.length} {contextMembers.length === 1 ? 'membro' : 'membros'} • {totalComments} {totalComments === 1 ? 'comentário' : 'comentários'}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col md:flex-row gap-2">
               <TabButton tab="comments">
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Comentários ({totalComments})

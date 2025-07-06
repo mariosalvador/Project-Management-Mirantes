@@ -188,7 +188,7 @@ export default function TeamMemberManager({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col lg:flex-row gap-4">
             <div>
               <Label htmlFor="memberSelect">Selecionar Membro</Label>
               <Select
@@ -243,18 +243,17 @@ export default function TeamMemberManager({
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="flex items-end">
-              <Button
-                type="button"
-                onClick={addTeamMember}
-                className="w-full"
-                disabled={!selectedMemberId || !memberRole || loadingMembers || Boolean(maxMembers && selectedMembers.length >= maxMembers)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar
-              </Button>
-            </div>
+          </div>
+          <div className="flex items-end">
+            <Button
+              type="button"
+              onClick={addTeamMember}
+              className="w-full"
+              disabled={!selectedMemberId || !memberRole || loadingMembers || Boolean(maxMembers && selectedMembers.length >= maxMembers)}
+            >
+              <Plus className="h-4 w-4 " />
+              Adicionar
+            </Button>
           </div>
 
           {/* Formulário de convite */}

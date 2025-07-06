@@ -8,8 +8,6 @@ import {
   Activity,
   CheckCircle,
   Target,
-  Bell,
-  Settings,
   AlertTriangle
 } from 'lucide-react';
 import { ResponsiveContainer, PageSection } from '@/components/ui/responsive-container';
@@ -17,13 +15,11 @@ import { GenericCollaboration } from '@/components/projecta/Collaboration/generi
 import { TaskCard } from '@/components/projecta/Collaboration/task-card';
 import { EmptyState } from '@/components/projecta/Collaboration/empty-state';
 import { CollaborationStats } from '@/components/projecta/Collaboration/collaboration-stats';
-import { usePermissions } from '@/hooks/usePermissions';
 import { useCollaborationData } from '@/hooks/useCollaborationData';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function CollaborationPage() {
   const { user } = useAuth();
-  const { hasPermission } = usePermissions();
   const {
     userProjects,
     stats,
@@ -36,8 +32,6 @@ export default function CollaborationPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'projects' | 'tasks' | 'activity'>('projects');
-
-  const canEdit = hasPermission('project', 'update');
 
   // Encontrar projeto e tarefa selecionados
   const selectedProject = selectedProjectId
@@ -105,18 +99,7 @@ export default function CollaborationPage() {
           title="Colaboração do Projeto"
           description="Sistema genérico de colaboração para projetos e tarefas"
           action={
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4 mr-2" />
-                Notificações
-              </Button>
-              {canEdit && (
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configurações
-                </Button>
-              )}
-            </div>
+            <>  </>
           }
         />
 

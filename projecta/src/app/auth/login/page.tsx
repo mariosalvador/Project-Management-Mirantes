@@ -1,9 +1,7 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,14 +19,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
-    // Validar campos do formulário
     const validation = validateLoginForm(email, password)
     if (!validation.isValid) {
       setError(validation.error || "Dados inválidos")
@@ -40,7 +36,11 @@ export default function LoginPage() {
       const user = await signIn(email, password);
 
       if (user) {
-        router.push('/apk')
+        const urlParams = new URLSearchParams(window.location.search)
+        const redirectTo = urlParams.get('redirect') || '/apk'
+
+        // Usar window.location.href para uma navegação completa
+        window.location.href = redirectTo
       }
     } catch (err: unknown) {
       console.error("Login error:", err)
@@ -59,7 +59,11 @@ export default function LoginPage() {
       const user = await signInWithGoogle()
 
       if (user) {
-        router.push('/apk')
+        const urlParams = new URLSearchParams(window.location.search)
+        const redirectTo = urlParams.get('redirect') || '/apk'
+
+        // Usar window.location.href para uma navegação completa
+        window.location.href = redirectTo
       }
     } catch (err: unknown) {
       console.error("Google login error:", err)

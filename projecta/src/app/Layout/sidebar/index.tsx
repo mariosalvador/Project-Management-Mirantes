@@ -93,18 +93,21 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="flex items-center justify-between p-4 border-b">
         {!isCollapsed && (
           <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-              <FolderOpen className="h-4 w-4 text-primary-foreground" />
+            <div className="h-8 w-8 bg-[#0887cc] rounded-lg flex items-center justify-center">
+              <FolderOpen className="h-4 w-4 text-[#fff]" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold">ProJecta</h2>
-              <p className="text-xs text-muted-foreground">Gerenciador de Projetos</p>
+              <h2 className="text-md font-semibold">Gerenciador de Projetos</h2>
+              <p className="text-xs text-muted-foreground"></p>
             </div>
           </div>
         )}
-        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)} className="h-8 w-8">
-          {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </Button>
+
+        {!isMobile && (
+          <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)} className="h-8 w-8">
+            {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </Button>
+        )}
       </div>
 
       <ScrollArea className="flex-1">
@@ -115,7 +118,7 @@ export function Sidebar({ className }: SidebarProps) {
           {/* Quick Actions */}
           {!isCollapsed && (
             <div className="space-y-2">
-              <Button asChild className="w-full justify-start text-sm">
+              <Button asChild className="w-full justify-start text-sm bg-[#0887cc] text-white hover:bg-[#066a9f]">
                 <Link href="/apk/project/create">
                   <Plus className="h-4 w-4 mr-2" />
                   {isMobile || !isTablet ? "Novo Projeto" : "Novo"}
@@ -126,7 +129,7 @@ export function Sidebar({ className }: SidebarProps) {
 
           {isCollapsed && (
             <div className="space-y-2">
-              <Button asChild size="icon" className="w-full">
+              <Button asChild size="icon" className="w-full bg-[#0887cc] text-white hover:bg-[#066a9f]">
                 <Link href="/apk/project/create">
                   <Plus className="h-4 w-4" />
                 </Link>
@@ -142,7 +145,7 @@ export function Sidebar({ className }: SidebarProps) {
               <Link key={item.name} href={item.href}>
                 <Button
                   variant={item.current ? "secondary" : "ghost"}
-                  className={cn("w-full justify-start", isCollapsed && "justify-center px-2")}
+                  className={cn(`w-full ${item.current && "bg-[#0887cc] text-white hover:bg-[#066a9f]"}`, isCollapsed && "justify-center px-2")}
                 >
                   <item.icon className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
                   {!isCollapsed && (
@@ -183,7 +186,7 @@ export function Sidebar({ className }: SidebarProps) {
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start h-auto p-2",
+                        "w-full justify-start h-auto p-2 border border-[#066a9fbd] rounded-md hover:bg-secondary hover:text-primary",
                         pathname === `/apk/project/${project.id}` && "bg-secondary",
                         isCollapsed && "justify-center",
                       )}

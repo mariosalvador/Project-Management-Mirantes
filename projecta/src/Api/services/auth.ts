@@ -121,8 +121,6 @@ export const signInWithGoogle = async () => {
     if (isNewUser && userCredential.user.email) {
       const emailExists = await checkEmailExists(userCredential.user.email)
       if (emailExists) {
-        // Se email já existe, fazer merge dos dados em vez de criar duplicado
-        console.log('Email já existe, fazendo merge das informações...')
       }
     }
 
