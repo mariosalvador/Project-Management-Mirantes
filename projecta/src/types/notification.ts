@@ -1,11 +1,12 @@
 export interface Notification {
   id: string;
-  type: 'task_deadline' | 'task_status_change' | 'task_assignment' | 'project_assignment' | 'project_update' | 'overdue_task';
+  type: 'team_invitation' | 'invite_accepted' | 'task_deadline' | 'task_status_change' | 'task_assignment' | 'project_assignment' | 'project_update' | 'overdue_task';
   title: string;
   message: string;
   userId: string;
   projectId: string;
   taskId?: string;
+  invitationId?: string;
   isRead: boolean;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   createdAt: string;
@@ -16,6 +17,12 @@ export interface Notification {
     newStatus?: string;
     assignedBy?: string;
     daysUntilDue?: number;
+    invitedBy?: string;
+    role?: string;
+    projectTitle?: string;
+    acceptedBy?: string;
+    acceptedByEmail?: string;
+    inviteId?: string;
   };
 }
 
@@ -56,11 +63,28 @@ export interface NotificationPreferences {
 
 export type NotificationFilter = 'all' | 'unread' | 'urgent' | 'task_related' | 'project_related';
 
+export interface NotificationFilterOptions {
+  types: Notification['type'][];
+  priority: Notification['priority'] | null;
+  isRead: boolean | null;
+  dateRange: 'today' | 'week' | 'month' | null;
+}
+
 export interface NotificationStats {
   total: number;
   unread: number;
+  high: number;
   urgent: number;
-  overdue: number;
+  byType: {
+    task_deadline: number;
+    task_assignment: number;
+    task_status_change: number;
+    project_assignment: number;
+    project_update: number;
+    overdue_task: number;
+    team_invitation: number;
+    invite_accepted: number;
+  };
 }
 
 export interface NotificationItemProps {

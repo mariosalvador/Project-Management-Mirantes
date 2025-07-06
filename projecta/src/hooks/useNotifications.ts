@@ -1,367 +1,195 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Notification, NotificationSettings, NotificationFilter, NotificationStats } from '@/types/notification';
-import { Task, Project } from '@/types/project';
+import { NotificationFilterOptions, NotificationStats } from '@/types/notification';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  getUserNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+  getUnreadNotificationsCount,
+  NotificationData
+} from '@/Api/services/notifications';
 
-// Mock de dados para demonstração
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'task_deadline',
-    title: 'Prazo se aproximando',
-    message: 'A tarefa "Criação do wireframe" vence em 2 dias',
-    userId: 'user1',
-    projectId: '1',
-    taskId: '2',
-    isRead: false,
-    priority: 'high',
-    createdAt: new Date().toISOString(),
-    dueDate: '2025-07-06',
-    actionUrl: '/apk/project/Website%20Redesign/tasks/manage?taskId=2',
-    metadata: {
-      daysUntilDue: 2
-    }
-  },
-  {
-    id: '2',
-    type: 'task_status_change',
-    title: 'Status da tarefa alterado',
-    message: 'A tarefa "Análise de requisitos" foi marcada como concluída',
-    userId: 'user1',
-    projectId: '1',
-    taskId: '1',
-    isRead: false,
-    priority: 'medium',
-    createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hora atrás
-    actionUrl: '/apk/project/Website%20Redesign/tasks',
-    metadata: {
-      oldStatus: 'active',
-      newStatus: 'completed'
-    }
-  },
-  {
-    id: '3',
-    type: 'task_assignment',
-    title: 'Nova tarefa atribuída',
-    message: 'Você foi atribuído à tarefa "Desenvolvimento da API"',
-    userId: 'user1',
-    projectId: '1',
-    taskId: '3',
-    isRead: true,
-    priority: 'medium',
-    createdAt: new Date(Date.now() - 7200000).toISOString(), // 2 horas atrás
-    actionUrl: '/apk/project/Website%20Redesign/tasks/manage?taskId=3',
-    metadata: {
-      assignedBy: 'Ana Silva'
-    }
-  },
-  {
-    id: '4',
-    type: 'overdue_task',
-    title: 'Tarefa em atraso',
-    message: 'A tarefa "Revisão de código" está 3 dias em atraso',
-    userId: 'user1',
-    projectId: '1',
-    taskId: '4',
-    isRead: false,
-    priority: 'urgent',
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 dia atrás
-    actionUrl: '/apk/project/Website%20Redesign/tasks/manage?taskId=4',
-    metadata: {
-      daysUntilDue: -3
-    }
-  },
-  {
-    id: '5',
-    type: 'project_assignment',
-    title: 'Adicionado ao projeto',
-    message: 'Você foi adicionado ao projeto "Mobile App Development"',
-    userId: 'user1',
-    projectId: '2',
-    isRead: false,
-    priority: 'medium',
-    createdAt: new Date(Date.now() - 10800000).toISOString(), // 3 horas atrás
-    actionUrl: '/apk/project/Mobile%20App%20Development',
-    metadata: {
-      assignedBy: 'João Costa'
-    }
-  }
-];
-
-const defaultSettings: NotificationSettings = {
-  userId: 'user1',
-  emailNotifications: true,
-  pushNotifications: true,
-  inAppNotifications: true,
-  taskDeadlines: {
-    enabled: true,
-    daysBefore: 2
-  },
-  taskStatusChanges: {
-    enabled: true,
-    onlyMyTasks: false
-  },
-  taskAssignments: {
-    enabled: true
-  },
-  projectAssignments: {
-    enabled: true
-  },
-  overdueReminders: {
-    enabled: true,
-    frequency: 'daily'
-  }
-};
-
-export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
-  const [filter, setFilter] = useState<NotificationFilter>('all');
-
-  const [isLoading,] = useState(false);
-
-  // Filtrar notificações baseado no filtro atual
-  const filteredNotifications = notifications.filter(notification => {
-    switch (filter) {
-      case 'unread':
-        return !notification.isRead;
-      case 'urgent':
-        return notification.priority === 'urgent';
-      case 'task_related':
-        return ['task_deadline', 'task_status_change', 'task_assignment', 'overdue_task'].includes(notification.type);
-      case 'project_related':
-        return ['project_assignment', 'project_update'].includes(notification.type);
-      default:
-        return true;
-    }
+export const useNotifications = () => {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [filter, setFilter] = useState<NotificationFilterOptions>({
+    types: [],
+    priority: null,
+    isRead: null,
+    dateRange: null
   });
 
-  // Estatísticas das notificações
-  const stats: NotificationStats = {
-    total: notifications.length,
-    unread: notifications.filter(n => !n.isRead).length,
-    urgent: notifications.filter(n => n.priority === 'urgent').length,
-    overdue: notifications.filter(n => n.type === 'overdue_task').length
-  };
+  // Buscar todas as notificações
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.uid) return;
 
-  // Marcar notificação como lida
-  const markAsRead = useCallback((notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === notificationId
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
+    try {
+      setIsLoading(true);
+      const fetchedNotifications = await getUserNotifications(user.uid);
+      setNotifications(fetchedNotifications);
+    } catch (error) {
+      console.error('Erro ao buscar notificações:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.uid]);
+
+  // Buscar contador de não lidas
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user?.uid) return;
+
+    try {
+      const count = await getUnreadNotificationsCount(user.uid);
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Erro ao buscar contador de não lidas:', error);
+    }
+  }, [user?.uid]);
+
+  // Marcar como lida
+  const markAsRead = useCallback(async (notificationId: string) => {
+    try {
+      const success = await markNotificationAsRead(notificationId);
+      if (success) {
+        setNotifications(prev =>
+          prev.map(notif =>
+            notif.id === notificationId
+              ? { ...notif, isRead: true }
+              : notif
+          )
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Erro ao marcar notificação como lida:', error);
+    }
   }, []);
 
   // Marcar todas como lidas
-  const markAllAsRead = useCallback(() => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, isRead: true }))
-    );
-  }, []);
+  const markAllAsRead = useCallback(async () => {
+    if (!user?.uid) return;
+
+    try {
+      const success = await markAllNotificationsAsRead(user.uid);
+      if (success) {
+        setNotifications(prev =>
+          prev.map(notif => ({ ...notif, isRead: true }))
+        );
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Erro ao marcar todas como lidas:', error);
+    }
+  }, [user?.uid]);
 
   // Deletar notificação
-  const deleteNotification = useCallback((notificationId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-  }, []);
-
-  // Deletar todas as notificações lidas
-  const deleteReadNotifications = useCallback(() => {
-    setNotifications(prev => prev.filter(n => !n.isRead));
-  }, []);
-
-  // Criar nova notificação (simula criação automática)
-  const createNotification = useCallback((notification: Omit<Notification, 'id' | 'createdAt'>) => {
-    if (!settings.inAppNotifications) return;
-
-    const newNotification: Notification = {
-      ...notification,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-
-    setNotifications(prev => [newNotification, ...prev]);
-  }, [settings.inAppNotifications]);
-
-  // Simular notificação de mudança de status de tarefa
-  const notifyTaskStatusChange = useCallback((task: Task, oldStatus: string, newStatus: string, projectTitle: string) => {
-    if (!settings.taskStatusChanges.enabled) return;
-
-    const priority = newStatus === 'completed' ? 'low' : 'medium';
-
-    createNotification({
-      type: 'task_status_change',
-      title: 'Status da tarefa alterado',
-      message: `A tarefa "${task.title}" foi alterada de ${getStatusLabel(oldStatus)} para ${getStatusLabel(newStatus)}`,
-      userId: settings.userId,
-      projectId: task.id, // Seria o projectId real
-      taskId: task.id,
-      isRead: false,
-      priority,
-      actionUrl: `/apk/project/${encodeURIComponent(projectTitle)}/tasks`,
-      metadata: {
-        oldStatus,
-        newStatus
+  const deleteNotif = useCallback(async (notificationId: string) => {
+    try {
+      const success = await deleteNotification(notificationId);
+      if (success) {
+        setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+        // Atualizar contador se a notificação não estava lida
+        const notification = notifications.find(n => n.id === notificationId);
+        if (notification && !notification.isRead) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
       }
-    });
-  }, [settings.taskStatusChanges.enabled, settings.userId, createNotification]);
+    } catch (error) {
+      console.error('Erro ao deletar notificação:', error);
+    }
+  }, [notifications]);
 
-  // Simular notificação de atribuição de tarefa
-  const notifyTaskAssignment = useCallback((task: Task, assignedBy: string, projectTitle: string) => {
-    if (!settings.taskAssignments.enabled) return;
+  // Aplicar filtros
+  const filteredNotifications = notifications.filter(notification => {
+    // Filtro por tipo
+    if (filter.types && filter.types.length > 0 && !filter.types.includes(notification.type)) {
+      return false;
+    }
 
-    createNotification({
-      type: 'task_assignment',
-      title: 'Nova tarefa atribuída',
-      message: `Você foi atribuído à tarefa "${task.title}" por ${assignedBy}`,
-      userId: settings.userId,
-      projectId: task.id, // Seria o projectId real
-      taskId: task.id,
-      isRead: false,
-      priority: task.priority === 'high' ? 'high' : 'medium',
-      actionUrl: `/apk/project/${encodeURIComponent(projectTitle)}/tasks/manage?taskId=${task.id}`,
-      metadata: {
-        assignedBy
+    // Filtro por prioridade
+    if (filter.priority && notification.priority !== filter.priority) {
+      return false;
+    }
+
+    // Filtro por status de leitura
+    if (filter.isRead !== null && notification.isRead !== filter.isRead) {
+      return false;
+    }
+
+    // Filtro por data
+    if (filter.dateRange) {
+      const notificationDate = new Date(notification.createdAt);
+      const now = new Date();
+
+      switch (filter.dateRange) {
+        case 'today':
+          return notificationDate.toDateString() === now.toDateString();
+        case 'week':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return notificationDate >= weekAgo;
+        case 'month':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return notificationDate >= monthAgo;
+        default:
+          return true;
       }
-    });
-  }, [settings.taskAssignments.enabled, settings.userId, createNotification]);
+    }
 
-  // Simular notificação de prazo se aproximando
-  const notifyTaskDeadline = useCallback((task: Task, daysUntilDue: number, projectTitle: string) => {
-    if (!settings.taskDeadlines.enabled || daysUntilDue > settings.taskDeadlines.daysBefore) return;
+    return true;
+  });
 
-    const priority = daysUntilDue <= 1 ? 'urgent' : daysUntilDue <= 3 ? 'high' : 'medium';
+  // Estatísticas
+  const stats: NotificationStats = {
+    total: notifications.length,
+    unread: unreadCount,
+    high: notifications.filter(n => n.priority === 'high').length,
+    urgent: notifications.filter(n => n.priority === 'urgent').length,
+    byType: {
+      task_deadline: notifications.filter(n => n.type === 'task_deadline').length,
+      task_assignment: notifications.filter(n => n.type === 'task_assignment').length,
+      task_status_change: notifications.filter(n => n.type === 'task_status_change').length,
+      project_assignment: notifications.filter(n => n.type === 'project_assignment').length,
+      project_update: notifications.filter(n => n.type === 'project_update').length,
+      overdue_task: notifications.filter(n => n.type === 'overdue_task').length,
+      team_invitation: notifications.filter(n => n.type === 'team_invitation').length,
+      invite_accepted: notifications.filter(n => n.type === 'invite_accepted').length
+    }
+  };
 
-    createNotification({
-      type: 'task_deadline',
-      title: 'Prazo se aproximando',
-      message: `A tarefa "${task.title}" vence em ${daysUntilDue} ${daysUntilDue === 1 ? 'dia' : 'dias'}`,
-      userId: settings.userId,
-      projectId: task.id, // Seria o projectId real
-      taskId: task.id,
-      isRead: false,
-      priority,
-      dueDate: task.dueDate,
-      actionUrl: `/apk/project/${encodeURIComponent(projectTitle)}/tasks/manage?taskId=${task.id}`,
-      metadata: {
-        daysUntilDue
-      }
-    });
-  }, [settings.taskDeadlines.enabled, settings.taskDeadlines.daysBefore, settings.userId, createNotification]);
-
-  // Simular notificação de tarefa vencida
-  const notifyOverdueTask = useCallback((task: Task, daysOverdue: number, projectTitle: string) => {
-    if (!settings.overdueReminders.enabled) return;
-
-    createNotification({
-      type: 'overdue_task',
-      title: 'Tarefa em atraso',
-      message: `A tarefa "${task.title}" está ${daysOverdue} ${daysOverdue === 1 ? 'dia' : 'dias'} em atraso`,
-      userId: settings.userId,
-      projectId: task.id, // Seria o projectId real
-      taskId: task.id,
-      isRead: false,
-      priority: 'urgent',
-      actionUrl: `/apk/project/${encodeURIComponent(projectTitle)}/tasks/manage?taskId=${task.id}`,
-      metadata: {
-        daysUntilDue: -daysOverdue
-      }
-    });
-  }, [settings.overdueReminders.enabled, settings.userId, createNotification]);
-
-  // Simular notificação de atribuição ao projeto
-  const notifyProjectAssignment = useCallback((project: Project, assignedBy: string) => {
-    if (!settings.projectAssignments.enabled) return;
-
-    createNotification({
-      type: 'project_assignment',
-      title: 'Adicionado ao projeto',
-      message: `Você foi adicionado ao projeto "${project.title}" por ${assignedBy}`,
-      userId: settings.userId,
-      projectId: project.id,
-      isRead: false,
-      priority: 'medium',
-      actionUrl: `/apk/project/${encodeURIComponent(project.title)}`,
-      metadata: {
-        assignedBy
-      }
-    });
-  }, [settings.projectAssignments.enabled, settings.userId, createNotification]);
-
-  // Adicionar notificação para um usuário específico
-  const addNotificationForUser = useCallback((userId: string, notificationData: {
-    type: Notification['type'];
-    title: string;
-    message: string;
-    projectId: string;
-    taskId?: string;
-    priority: Notification['priority'];
-    actionUrl?: string;
-    metadata?: Record<string, unknown>;
-  }) => {
-    createNotification({
-      type: notificationData.type,
-      title: notificationData.title,
-      message: notificationData.message,
-      userId,
-      projectId: notificationData.projectId,
-      taskId: notificationData.taskId,
-      isRead: false,
-      priority: notificationData.priority,
-      actionUrl: notificationData.actionUrl || `/apk/project/${notificationData.projectId}${notificationData.taskId ? '/tasks?taskId=' + notificationData.taskId : ''}`,
-      metadata: notificationData.metadata
-    });
-  }, [createNotification]);
-
-  // Verificar prazos automaticamente (simula um job em background)
+  // Carregar dados iniciais
   useEffect(() => {
-    if (!settings.taskDeadlines.enabled) return;
+    if (user?.uid) {
+      fetchNotifications();
+      fetchUnreadCount();
+    }
+  }, [user?.uid, fetchNotifications, fetchUnreadCount]);
 
-    const checkDeadlines = () => {
-      // Aqui você faria uma verificação real com as tarefas do usuário
-      // Por agora, vamos simular que encontramos uma tarefa próxima do prazo
-      console.log('Verificando prazos de tarefas...');
-    };
+  // Polling para atualizações (opcional)
+  useEffect(() => {
+    if (!user?.uid) return;
 
-    const interval = setInterval(checkDeadlines, 60000); // Verifica a cada minuto
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30000); // Atualizar a cada 30 segundos
+
     return () => clearInterval(interval);
-  }, [settings.taskDeadlines.enabled]);
-
-  // Atualizar configurações
-  const updateSettings = useCallback((newSettings: Partial<NotificationSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
-  }, []);
+  }, [user?.uid, fetchUnreadCount]);
 
   return {
     notifications: filteredNotifications,
     allNotifications: notifications,
-    settings,
+    unreadCount,
+    isLoading,
     filter,
     stats,
-    isLoading,
     setFilter,
     markAsRead,
     markAllAsRead,
-    deleteNotification,
-    deleteReadNotifications,
-    updateSettings,
-    // Funções para criar notificações
-    addNotificationForUser,
-    notifyTaskStatusChange,
-    notifyTaskAssignment,
-    notifyTaskDeadline,
-    notifyOverdueTask,
-    notifyProjectAssignment
+    deleteNotification: deleteNotif,
+    refreshNotifications: fetchNotifications,
+    refreshUnreadCount: fetchUnreadCount
   };
-}
-
-// Função auxiliar para obter label do status
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case 'pending': return 'Pendente';
-    case 'active': return 'Em Progresso';
-    case 'completed': return 'Concluída';
-    default: return status;
-  }
-}
+};

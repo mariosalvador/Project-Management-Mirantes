@@ -1,6 +1,7 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, User } from "firebase/auth"
 import { doc, setDoc, getDoc } from "firebase/firestore"
 import { auth, db } from "./firebase"
+import { checkPendingInvitesOnLogin } from "./invites"
 
 const googleProvider = new GoogleAuthProvider()
 
@@ -42,18 +43,32 @@ const saveUserToFirestore = async (user: User, provider: 'email' | 'google') => 
 export const signUp = async (email: string, password: string) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password)
   await saveUserToFirestore(userCredential.user, 'email')
+
+  // Verificar convites pendentes após criar conta
+  await checkPendingInvitesOnLogin(email, userCredential.user.uid)
+
   return userCredential.user
 }
 
 export const signIn = async (email: string, password: string) => {
   const userCredential = await signInWithEmailAndPassword(auth, email, password)
   await saveUserToFirestore(userCredential.user, 'email')
+
+  // Verificar convites pendentes após login
+  await checkPendingInvitesOnLogin(email, userCredential.user.uid)
+
   return userCredential.user
 }
 
 export const signInWithGoogle = async () => {
   const userCredential = await signInWithPopup(auth, googleProvider)
   await saveUserToFirestore(userCredential.user, 'google')
+
+  // Verificar convites pendentes após login
+  if (userCredential.user.email) {
+    await checkPendingInvitesOnLogin(userCredential.user.email, userCredential.user.uid)
+  }
+
   return userCredential.user
 }
 

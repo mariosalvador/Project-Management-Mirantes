@@ -25,8 +25,7 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
   const {
     notifications,
     stats,
-    markAllAsRead,
-    deleteReadNotifications
+    markAllAsRead
   } = useNotifications();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'center' | 'settings'>('overview');
@@ -45,12 +44,13 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
       task_assignment: 0,
       project_assignment: 0,
       task_status_change: 0,
-      project_update: 0
+      project_update: 0,
+      team_invitation: 0
     };
 
     notifications.forEach(n => {
-      if (types[n.type] !== undefined) {
-        types[n.type]++;
+      if (types[n.type as keyof typeof types] !== undefined) {
+        types[n.type as keyof typeof types]++;
       }
     });
 
@@ -138,18 +138,6 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-8 w-8 text-red-600" />
-                  <div>
-                    <p className="text-2xl font-bold">{stats.overdue}</p>
-                    <p className="text-sm text-muted-foreground">Vencidas</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Ações Rápidas */}
@@ -165,8 +153,8 @@ export function NotificationDashboard({ className }: NotificationDashboardProps)
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={deleteReadNotifications}
                   size="sm"
+                  disabled
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Limpar Lidas
