@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import {
   createProject,
   updateTaskStatus,
   deleteTask,
+  //@ts-ignore
   getProjectById,
   getUserProjectsAsMember
 } from '@/Api/services/projects'

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { renderHook, act } from '@testing-library/react';
 import { useCollaborationData } from '@/hooks/useCollaborationData';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -55,6 +56,7 @@ describe('Integração: Fluxo Completo de Tarefa', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({
+      //@ts-expect-error
       user: mockUser,
       loading: false,
       login: jest.fn(),

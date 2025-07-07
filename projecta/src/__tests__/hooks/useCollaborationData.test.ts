@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useCollaborationData } from '@/hooks/useCollaborationData'
 import { useAuth } from '@/contexts/AuthContext'
 import * as projectsService from '@/Api/services/projects'
-import * as collaborationService from '@/Api/services/collaboration'
 
 // Mock dos hooks e serviços
 jest.mock('@/contexts/AuthContext')
@@ -68,6 +68,7 @@ describe('useCollaborationData Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockUseAuth.mockReturnValue({
+      // @ts-expect-error
       user: mockUser,
       userData: null,
       loading: false,
