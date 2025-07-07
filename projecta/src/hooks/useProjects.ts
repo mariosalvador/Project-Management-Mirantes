@@ -31,33 +31,26 @@ export const useProjects = (): UseProjectsReturn => {
 
   // Carregar projetos do usuário
   const loadProjects = useCallback(async () => {
-    console.log('useProjects: Função loadProjects chamada')
-    console.log('useProjects: Estado do usuário:', user?.uid || 'não autenticado')
 
     if (!user?.uid) {
-      console.log('useProjects: Usuário não autenticado - retornando lista vazia')
       setProjects([])
-      setError(null) // Não mostrar erro quando não há usuário
+      setError(null)
       setLoading(false)
       return
     }
 
-    console.log('useProjects: Carregando projetos para usuário:', user.uid)
     setLoading(true)
     setError(null)
 
     try {
       const userProjects = await getUserProjects(user.uid)
-      console.log('useProjects: Projetos carregados com sucesso:', userProjects.length)
       setProjects(userProjects)
       setError(null) // Limpar erro em caso de sucesso
     } catch (err) {
       console.error('useProjects: Erro ao carregar projetos:', err)
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar projetos'
       setError(errorMessage)
-
-      // Para debug, não mostrar toast de erro
-      // toast.error(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }

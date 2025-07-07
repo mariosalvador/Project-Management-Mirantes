@@ -23,7 +23,7 @@ import {
   Play,
   Pause,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useProjectByTitle } from "@/hooks/useProjects";

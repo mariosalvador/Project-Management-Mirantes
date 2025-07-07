@@ -1,5 +1,3 @@
-// Tipos para o sistema de feed de atividades
-
 export type ActivityType =
   | 'project_created'
   | 'project_updated'
@@ -199,5 +197,3 @@ export const ACTIVITY_TEMPLATES: Record<ActivityType, {
     priority: 'low'
   }
 };
-
-// Tipos exportados principais

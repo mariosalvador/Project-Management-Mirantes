@@ -145,7 +145,7 @@ export function useActivityLogger() {
     addActivity('user_added', {
       userName: user.userName,
       projectTitle: user.projectTitle,
-      userRole: 'member' // poderia ser passado como parâmetro
+      userRole: 'member'
     }, {
       projectId: user.projectId,
       targetUserId: user.userId

@@ -27,7 +27,7 @@ interface ActivityFeedProps {
   className?: string;
   showFilters?: boolean;
   maxItems?: number;
-  projectId?: string; // Para filtrar apenas atividades de um projeto específico
+  projectId?: string;
 }
 
 const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {

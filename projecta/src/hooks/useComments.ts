@@ -1,136 +1,166 @@
 "use client"
 
-import { useState, useCallback } from 'react';
-import { Comment, Activity, Reaction } from '@/types/collaboration';
-import { usePermissions } from './usePermissions';
+import { useState, useCallback, useEffect } from 'react';
+import { Comment } from '@/types/comments';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  getComments,
+  createComment,
+  updateComment as updateCommentService,
+  deleteComment as deleteCommentService,
+  addReaction
+} from '@/Api/services/comments';
 
 interface UseCommentsProps {
-  projectId?: string;
-  taskId?: string;
+  contextType: 'project' | 'task';
+  contextId: string;
+  projectId: string;
+  allowedUsers?: string[];
+  taskId?: string
 }
 
-export function useComments({ projectId, taskId }: UseCommentsProps) {
+export function useComments({ contextType, contextId, projectId, allowedUsers = [] }: UseCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const { currentUser, hasPermission } = usePermissions();
+  const [loading, setLoading] = useState(true);
+  const [newComment, setNewComment] = useState('');
+  const { user } = useAuth();
 
-  const addComment = useCallback((content: string, mentions: string[] = [], attachments = []) => {
-    if (!currentUser || !hasPermission('comment', 'create')) return;
+  // Verificar se o usuário pode comentar
+  const canUserComment = user && (
+    allowedUsers.length === 0 ||
+    allowedUsers.includes(user.email || '') ||
+    allowedUsers.includes(user.displayName || '')
+  );
 
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      content,
-      authorId: currentUser.id,
-      authorName: currentUser.name,
-      authorAvatar: currentUser.avatar,
-      createdAt: new Date().toISOString(),
-      mentions,
-      attachments,
-      reactions: []
+  // Carregar comentários
+  useEffect(() => {
+    if (!contextId) return;
+
+    const loadComments = async () => {
+      try {
+        setLoading(true);
+
+        const fetchedComments = await getComments(contextType, contextId, projectId);
+
+        setComments(fetchedComments);
+      } catch (error) {
+        console.error('Erro ao carregar comentários:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setComments(prev => [...prev, newComment]);
+    loadComments();
+  }, [contextType, contextId, projectId]);
 
-    // Criar atividade
-    const activity: Activity = {
-      id: Date.now().toString(),
-      type: 'comment_added',
-      description: `${currentUser.name} adicionou um comentário`,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userAvatar: currentUser.avatar,
-      targetType: taskId ? 'task' : 'project',
-      targetId: taskId || projectId || '',
-      createdAt: new Date().toISOString()
-    };
+  // Submeter novo comentário
+  const submitComment = useCallback(async () => {
+    if (!user || !newComment.trim() || !canUserComment) {
+      return;
+    }
 
-    setActivities(prev => [activity, ...prev]);
-  }, [currentUser, hasPermission, taskId, projectId]);
+    try {
+      const commentData = {
+        content: newComment,
+        contextType,
+        contextId,
+        projectId
+      };
 
-  const updateComment = useCallback((commentId: string, content: string) => {
-    if (!currentUser) return;
-
-    const comment = comments.find(c => c.id === commentId);
-    if (!comment) return;
-
-    // Verificar permissão (próprio comentário ou permissão de admin)
-    if (!hasPermission('comment', 'update', comment.authorId)) return;
-
-    setComments(prev => prev.map(c =>
-      c.id === commentId
-        ? { ...c, content, updatedAt: new Date().toISOString(), isEdited: true }
-        : c
-    ));
-  }, [currentUser, comments, hasPermission]);
-
-  const deleteComment = useCallback((commentId: string) => {
-    if (!currentUser) return;
-
-    const comment = comments.find(c => c.id === commentId);
-    if (!comment) return;
-
-    // Verificar permissão (próprio comentário ou permissão de admin)
-    if (!hasPermission('comment', 'delete', comment.authorId)) return;
-
-    setComments(prev => prev.filter(c => c.id !== commentId));
-  }, [currentUser, comments, hasPermission]);
-
-  const addReaction = useCallback((commentId: string, emoji: string) => {
-    if (!currentUser) return;
-
-    setComments(prev => prev.map(comment => {
-      if (comment.id !== commentId) return comment;
-
-      const existingReaction = comment.reactions?.find(r =>
-        r.userId === currentUser.id && r.emoji === emoji
+      await createComment(
+        commentData,
+        user.uid,
+        user.displayName || user.email || 'Usuário',
+        user.email || undefined,
+        user.photoURL || undefined
       );
 
-      if (existingReaction) {
-        // Remover reação se já existe
-        return {
-          ...comment,
-          reactions: comment.reactions?.filter(r =>
-            !(r.userId === currentUser.id && r.emoji === emoji)
-          ) || []
-        };
-      } else {
-        // Adicionar nova reação
-        const newReaction: Reaction = {
-          id: Date.now().toString(),
-          emoji,
-          userId: currentUser.id,
-          userName: currentUser.name,
-          createdAt: new Date().toISOString()
-        };
 
-        return {
-          ...comment,
-          reactions: [...(comment.reactions || []), newReaction]
-        };
-      }
-    }));
-  }, [currentUser]);
+      // Recarregar comentários
+      const updatedComments = await getComments(contextType, contextId, projectId);
+      setComments(updatedComments);
+      setNewComment('');
 
-  const replyToComment = useCallback((parentId: string, content: string) => {
-    if (!currentUser || !hasPermission('comment', 'create')) return;
+    } catch (error) {
+      console.error('Erro ao enviar comentário:', error);
+    }
+  }, [user, newComment, canUserComment, contextType, contextId, projectId]);
 
-    const reply: Comment = {
-      id: Date.now().toString(),
-      content,
-      authorId: currentUser.id,
-      authorName: currentUser.name,
-      authorAvatar: currentUser.avatar,
-      createdAt: new Date().toISOString(),
-      parentId,
-      reactions: []
-    };
+  // Editar comentário
+  const updateComment = useCallback(async (commentId: string, content: string) => {
+    if (!user) return;
 
-    setComments(prev => [...prev, reply]);
-  }, [currentUser, hasPermission]);
+    try {
+      await updateCommentService(commentId, content, user.uid);
 
+      // Recarregar comentários
+      const updatedComments = await getComments(contextType, contextId, projectId);
+      setComments(updatedComments);
+    } catch (error) {
+      console.error('Erro ao editar comentário:', error);
+    }
+  }, [user, contextType, contextId, projectId]);
+
+  // Deletar comentário
+  const deleteComment = useCallback(async (commentId: string) => {
+    if (!user) return;
+
+    try {
+      await deleteCommentService(commentId);
+
+      // Recarregar comentários
+      const updatedComments = await getComments(contextType, contextId, projectId);
+      setComments(updatedComments);
+    } catch (error) {
+      console.error('Erro ao deletar comentário:', error);
+    }
+  }, [user, contextType, contextId, projectId]);
+
+  // Adicionar reação
+  const addReactionToComment = useCallback(async (commentId: string, emoji: string) => {
+    if (!user) return;
+
+    try {
+      await addReaction(commentId, emoji, user.uid, user.displayName || user.email || 'Usuário');
+      // Recarregar comentários
+      const updatedComments = await getComments(contextType, contextId, projectId);
+      setComments(updatedComments);
+    } catch (error) {
+      console.error('Erro ao adicionar reação:', error);
+    }
+  }, [user, contextType, contextId, projectId]);
+
+  // Responder a comentário
+  const replyToComment = useCallback(async (parentId: string, content: string) => {
+    if (!user || !content.trim() || !canUserComment) return;
+
+    try {
+      const commentData = {
+        content,
+        contextType,
+        contextId,
+        projectId,
+        parentId
+      };
+
+      await createComment(
+        commentData,
+        user.uid,
+        user.displayName || user.email || 'Usuário',
+        user.email || undefined,
+        user.photoURL || undefined
+      );
+
+      // Recarregar comentários
+      const updatedComments = await getComments(contextType, contextId, projectId);
+      setComments(updatedComments);
+    } catch (error) {
+      console.error('Erro ao responder comentário:', error);
+    }
+  }, [user, canUserComment, contextType, contextId, projectId]);
+
+  // Processar menções
   const mentionUser = useCallback((content: string) => {
-    // Esta função pode ser usada para processar menções
-    // e enviar notificações para os usuários mencionados
     return content.replace(/@(\w+)/g, (match, username) => {
       return `<span class="mention">@${username}</span>`;
     });
@@ -138,21 +168,25 @@ export function useComments({ projectId, taskId }: UseCommentsProps) {
 
   return {
     comments,
-    activities,
-    addComment,
+    loading,
+    newComment,
+    setNewComment,
+    submitComment,
+    canUserComment,
+    addComment: submitComment,
     updateComment,
     deleteComment,
-    addReaction,
+    addReaction: addReactionToComment,
     replyToComment,
     mentionUser,
-    canComment: hasPermission('comment', 'create'),
+    canComment: canUserComment,
     canEdit: (commentId: string) => {
       const comment = comments.find(c => c.id === commentId);
-      return comment ? hasPermission('comment', 'update', comment.authorId) : false;
+      return comment ? comment.authorId === user?.uid : false;
     },
     canDelete: (commentId: string) => {
       const comment = comments.find(c => c.id === commentId);
-      return comment ? hasPermission('comment', 'delete', comment.authorId) : false;
+      return comment ? comment.authorId === user?.uid : false;
     }
   };
 }

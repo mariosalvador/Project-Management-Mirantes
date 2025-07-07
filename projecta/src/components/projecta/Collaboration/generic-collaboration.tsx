@@ -131,8 +131,8 @@ export function GenericCollaboration({
       {/* Cabeçalho */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col xl:flex-row items-center justify-between">
-            <div>
+          <div className="flex flex-col items-center justify-between">
+            <div className="flex flex-col">
               <CardTitle className="text-lg flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
                 Colaboração - {contextTitle}

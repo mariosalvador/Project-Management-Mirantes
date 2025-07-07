@@ -3,6 +3,7 @@ export interface TeamMember {
   name: string;
   role: string;
   avatar: string;
+  email?: string; // Email do membro para identificação
 }
 
 export interface Task {

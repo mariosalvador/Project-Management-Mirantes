@@ -55,7 +55,7 @@ export default function Home() {
               href="/auth/login"
               className="border-2 border-[#0887cc] text-[#0887cc] px-8 py-4 rounded-lg font-semibold text-lg hover:bg-[#0887cc] hover:text-white transition-all"
             >
-              Fazer Login
+              Entre agora
             </Link>
           </div>
         </div>

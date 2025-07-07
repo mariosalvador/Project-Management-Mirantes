@@ -194,11 +194,6 @@ export default function CreateProjectPage() {
       }
     }
 
-    // Validações da equipe
-    if (formData.team.length === 0) {
-      newErrors.team = "Pelo menos um membro da equipe deve ser adicionado";
-    }
-
     // Validação de categoria
     if (formData.category.trim() && formData.category.trim().length > 50) {
       newErrors.category = "Categoria deve ter no máximo 50 caracteres";
@@ -246,12 +241,12 @@ export default function CreateProjectPage() {
       const projectId = await createNewProject(formData);
 
       if (projectId) {
-        // Registrar atividade no feed
         logProjectCreated({
           projectId: projectId,
           projectTitle: formData.title
         });
-        router.push("/apk/project");
+
+          router.push("/apk/project");
       }
     } catch (error) {
       console.error("Erro ao criar projeto:", error);
@@ -399,7 +394,9 @@ export default function CreateProjectPage() {
             {/* Equipe do Projeto */}
             <ProjectTeamSelector
               selectedMembers={formData.team}
-              onMembersChange={(members) => setFormData(prev => ({ ...prev, team: members }))}
+              onMembersChange={(members) => {
+                setFormData(prev => ({ ...prev, team: members }));
+              }}
             />
             {errors.team && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -413,7 +410,9 @@ export default function CreateProjectPage() {
             {/* Tarefas Iniciais */}
             <ProjectTasksManager
               tasks={formData.tasks}
-              onTasksChange={(tasks) => setFormData(prev => ({ ...prev, tasks }))}
+              onTasksChange={(tasks) => {
+                              setFormData(prev => ({ ...prev, tasks }));
+              }}
               projectStartDate={formData.startDate}
               projectDueDate={formData.dueDate}
               teamMembers={formData.team}
@@ -613,6 +612,8 @@ export default function CreateProjectPage() {
                 )}
               </CardContent>
             </Card>
+
+          
           </div>
         </div>
       </form>

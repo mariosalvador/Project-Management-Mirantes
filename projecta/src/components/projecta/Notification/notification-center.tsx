@@ -80,9 +80,9 @@ export function NotificationCenter() {
           size="icon"
           className="relative bg-white hover:bg-[#066a9f]/50 text-[#066a9f] "
         >
-          <Bell className="h-4 w-4 text-[#066a9f]/80" />
+          <Bell className="h-5 w-5 text-[#066a9f]/80" />
           {stats.unread > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
+            <Badge className="absolute -top-1 -right-1 h-6 w-6 flex items-center justify-center p-0 text-xs bg-red-500">
               {stats.unread > 99 ? '99+' : stats.unread}
             </Badge>
           )}

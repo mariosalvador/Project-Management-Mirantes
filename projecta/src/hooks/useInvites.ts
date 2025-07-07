@@ -21,17 +21,14 @@ export const useInvites = (projectId?: string) => {
   // Buscar convites do projeto
   const fetchProjectInvites = useCallback(async () => {
     if (!projectId) {
-      console.log('ProjectId não fornecido para buscar convites');
       return;
     }
 
     try {
       setIsLoading(true);
       setError(null); // Limpar erro anterior
-      console.log('Buscando convites para projeto:', projectId, 'usuário:', user?.uid);
       const invites = await getProjectInvites(projectId, user?.uid);
       setInvitations(invites);
-      console.log(`Carregados ${invites.length} convites para o projeto ${projectId}:`, invites);
     } catch (err) {
       const errorMessage = 'Erro ao carregar convites do projeto';
       setError(errorMessage);
@@ -69,7 +66,6 @@ export const useInvites = (projectId?: string) => {
       setIsLoading(true);
       setError(null);
 
-      // Validação: impedir auto-convite
       if (email.toLowerCase().trim() === user.email?.toLowerCase().trim()) {
         setError('Você não pode enviar um convite para si mesmo');
         return false;

@@ -60,7 +60,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
         name: userData.displayName || user.displayName || 'Usuário',
         email: userData.email || user.email || '',
         avatar: userData.photoURL || user.photoURL || undefined,
-        role: 'admin', // Por padrão, primeiro usuário é admin - isso deveria vir do banco
+        role: 'admin',
         isActive: true,
         createdAt: getValidDate(userData.createdAt),
         lastActive: new Date().toISOString(),
@@ -68,7 +68,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
       };
 
       setCurrentUser(authUser);
-      setUsers([authUser]); // Por enquanto apenas o usuário logado
+      setUsers([authUser]); 
     }
   }, [user, userData]);
 

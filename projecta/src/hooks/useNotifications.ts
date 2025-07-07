@@ -71,7 +71,6 @@ export const useNotifications = () => {
       ...prev,
       ...newSettings
     }));
-    // TODO: Salvar no Firestore
   }, []);
 
   // Funções de notificação
@@ -255,7 +254,6 @@ export const useNotifications = () => {
     }
   }, [user?.uid, fetchNotifications, fetchUnreadCount]);
 
-  // Polling para atualizações (opcional)
   useEffect(() => {
     if (!user?.uid) return;
 

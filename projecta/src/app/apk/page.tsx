@@ -21,7 +21,7 @@ export default function DashboardPage() {
   // Carregar projetos quando o usuário estiver autenticado
   useEffect(() => {
     if (user?.uid) {
-      loadProjects()
+      loadProjects();
     }
   }, [user?.uid, loadProjects])
 
@@ -60,7 +60,7 @@ export default function DashboardPage() {
         <div className="container">
           <div className="flex items-center justify-center min-h-96">
             <div className="flex flex-col items-center space-y-4">
-              <Loader2 className="h-8 w-8 animate-spin" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#06b6d4]" />
               <p className="text-muted-foreground">Carregando projetos...</p>
             </div>
           </div>

@@ -18,7 +18,6 @@ export default function ProjectsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const isMobile = useIsMobile()
-
   const { projects, loading, error, loadProjects } = useProjects()
 
   const filteredProjects = useMemo(() => {

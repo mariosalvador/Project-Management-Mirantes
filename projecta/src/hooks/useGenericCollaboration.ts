@@ -73,7 +73,6 @@ export function useGenericCollaboration({
     }
   }, [contextId, contextType, contextTitle, user?.uid]);
 
-  // Configurar listener em tempo real
   useEffect(() => {
     if (!contextId || !contextType) return;
 
@@ -81,10 +80,8 @@ export function useGenericCollaboration({
 
     const setupRealtimeListener = async () => {
       try {
-        // Primeiro carregar os dados
         await loadCollaborationData();
 
-        // Depois configurar o listener
         unsubscribe = subscribeToCollaboration(
           contextId,
           contextType,
@@ -103,7 +100,6 @@ export function useGenericCollaboration({
 
     setupRealtimeListener();
 
-    // Cleanup
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -155,7 +151,6 @@ export function useGenericCollaboration({
     }
   }, [canComment, user, collaborationId, contextType, contextId, contextTitle]);
 
-  // Editar comentário no Firebase
   const editComment = useCallback(async (commentId: string, newContent: string) => {
     if (!canEdit || !user || !newContent.trim() || !collaborationId) return false;
 
@@ -189,12 +184,11 @@ export function useGenericCollaboration({
     }
   }, [canEdit, user, collaborationId]);
 
-  // Adicionar reação (implementação futura)
+  // Reação (implementação futura)
   const addReaction = useCallback(async (commentId: string, emoji: string) => {
     if (!user || !collaborationId) return false;
 
     try {
-      // TODO: Implementar addReaction no Firebase
       console.log('Adicionar reação:', { commentId, emoji });
       return true;
     } catch (error) {

@@ -2,17 +2,19 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProjects } from './useProjects';
 import { usePermissions } from './usePermissions';
 import { Project, Task } from '@/types/project';
 import {
   getUserCollaborationStats,
   getProjectMembers,
   getCollaborationData,
-  createCollaborationContext,
   addActivity
 } from '@/Api/services/collaboration';
-import { updateProject } from '@/Api/services/projects';
+import {
+  getUserProjectsAsMember,
+  updateTaskStatus as updateTaskStatusService,
+  deleteTask as deleteTaskService
+} from '@/Api/services/projects';
 import { toast } from 'sonner';
 
 interface CollaborationStats {
@@ -52,7 +54,9 @@ interface UseCollaborationDataReturn {
   stats: CollaborationStats;
   loading: boolean;
   error: string | null;
+  lastUpdated: Date | null;
   updateTaskStatus: (projectId: string, taskId: string, newStatus: Task['status']) => Promise<void>;
+  deleteTask: (projectId: string, taskId: string) => Promise<void>;
   refreshData: () => Promise<void>;
   getTasksForUser: (userId: string) => Task[];
   getProjectsUserCanEdit: () => UserProjectData[];
@@ -60,7 +64,6 @@ interface UseCollaborationDataReturn {
 
 export const useCollaborationData = (): UseCollaborationDataReturn => {
   const { user } = useAuth();
-  const { projects, loading: projectsLoading, loadProjects } = useProjects();
   const { hasPermission } = usePermissions();
 
   const [userProjects, setUserProjects] = useState<UserProjectData[]>([]);
@@ -79,10 +82,11 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Carregar dados de membros para cada projeto do Firebase
-  const loadProjectsWithMembers = useCallback(async () => {
-    if (!user?.uid || !projects.length) {
+  // Carregar projetos onde o usuário é membro através do email
+  const loadUserProjectsAsMember = useCallback(async () => {
+    if (!user?.email) {
       setUserProjects([]);
       return;
     }
@@ -91,31 +95,44 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
     setError(null);
 
     try {
+      const memberProjects = await getUserProjectsAsMember(user.email, user.displayName || '');
       const projectsWithMembers: UserProjectData[] = [];
 
-      for (const project of projects) {
+      for (const project of memberProjects) {
         try {
-          // Buscar membros do projeto do Firebase
-          const members = await getProjectMembers(project.id);
+          // Buscar membros detalhados do projeto (se houver sistema de membros separado)
+          let members: ProjectMember[] = [];
+
+          try {
+            members = await getProjectMembers(project.id);
+          } catch (memberError) {
+            console.log("Sistema de membros não disponível, usando dados do team:", memberError);
+            // Usar dados do team como fallback
+            members = project.team?.map(teamMember => ({
+              id: teamMember.id,
+              userId: teamMember.id,
+              email: teamMember.email || '',
+              name: teamMember.name,
+              avatar: teamMember.avatar,
+              role: teamMember.role,
+              projectId: project.id,
+              joinedAt: new Date().toISOString(),
+              isActive: true
+            })) || [];
+          }
 
           // Encontrar a role do usuário atual no projeto
-          const userMember = members.find(member => member.userId === user.uid);
-          const userRole = userMember?.role || 'viewer';
+          const userMember = members.find(member =>
+            member.email?.toLowerCase() === user.email?.toLowerCase() ||
+            member.name?.toLowerCase() === user.displayName?.toLowerCase()
+          );
 
-          // Verificar se existe contexto de colaboração, se não criar um
-          const collaborationData = await getCollaborationData(project.id, 'project');
+          const userRole = userMember?.role ||
+            project.team?.find(t =>
+              t.email?.toLowerCase() === user.email?.toLowerCase() ||
+              t.name?.toLowerCase() === user.displayName?.toLowerCase()
+            )?.role || 'member';
 
-          if (!collaborationData) {
-            // Criar contexto de colaboração se não existir
-            const memberIds = members.map(m => m.userId);
-            await createCollaborationContext(
-              project.id,
-              'project',
-              project.title,
-              memberIds,
-              user.uid
-            );
-          }
 
           projectsWithMembers.push({
             ...project,
@@ -124,10 +141,10 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
           });
         } catch (projectError) {
           console.error(`Erro ao carregar dados do projeto ${project.id}:`, projectError);
-          // Adicionar projeto sem dados de membros em caso de erro
+          // Adicionar projeto com dados básicos em caso de erro
           projectsWithMembers.push({
             ...project,
-            userRole: 'viewer',
+            userRole: 'member',
             members: []
           });
         }
@@ -135,12 +152,12 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
 
       setUserProjects(projectsWithMembers);
     } catch (err) {
-      console.error('Erro ao carregar projetos com membros:', err);
-      setError('Erro ao carregar dados de colaboração');
+      console.error('Erro ao carregar projetos como membro:', err);
+      setError('Erro ao carregar projetos onde você é membro');
     } finally {
       setLoading(false);
     }
-  }, [user?.uid, projects]);
+  }, [user?.email, user?.displayName]);
 
   // Calcular estatísticas localmente como fallback
   const calculateLocalStats = useCallback(() => {
@@ -158,6 +175,7 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
         totalComments: 0,
         totalActivities: 0
       });
+      setLastUpdated(new Date());
       return;
     }
 
@@ -178,8 +196,11 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
         project.tasks.forEach(task => {
           totalTasks++;
 
-          // Verificar se o usuário está atribuído à tarefa
-          const isUserAssigned = task.assignees.includes(user.uid);
+          // Verificar se o usuário está atribuído à tarefa (usar email ou displayName)
+          const isUserAssigned = task.assignees.includes(user.email || '') ||
+            task.assignees.includes(user.displayName || '') ||
+            task.assignees.includes(user.uid);
+
           if (isUserAssigned) {
             userTasks++;
             if (task.status === 'completed') {
@@ -200,7 +221,7 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
               break;
           }
 
-          // Verificar tarefas atrasadas
+          // Verificar tarefas atrasadas (apenas tarefas não concluídas)
           if (task.dueDate && new Date(task.dueDate) < now && task.status !== 'completed') {
             overdueTasks++;
           }
@@ -210,7 +231,7 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
 
     const myProgress = userTasks > 0 ? Math.round((userCompletedTasks / userTasks) * 100) : 0;
 
-    setStats({
+    const calculatedStats = {
       totalProjects: userProjects.length,
       activeProjects,
       completedProjects,
@@ -222,8 +243,11 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
       myProgress,
       totalComments: 0,
       totalActivities: 0
-    });
-  }, [user?.uid, userProjects]);
+    };
+
+    setStats(calculatedStats);
+    setLastUpdated(new Date());
+  }, [user?.uid, user?.email, user?.displayName, userProjects]);
 
   // Carregar estatísticas do Firebase
   const loadStatsFromFirebase = useCallback(async () => {
@@ -247,6 +271,7 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
     try {
       const firebaseStats = await getUserCollaborationStats(user.uid);
       setStats(firebaseStats);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Erro ao carregar estatísticas do Firebase:', error);
       // Fallback para cálculo local se houver erro
@@ -275,19 +300,35 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
       }
 
       // Verificar se o usuário pode editar esta tarefa
-      const canEdit = task.assignees.includes(user.uid) || project.userRole === 'admin' || project.userRole === 'manager';
+      const canEdit = task.assignees.includes(user.email || '') ||
+        task.assignees.includes(user.displayName || '') ||
+        project.userRole === 'admin' ||
+        project.userRole === 'manager';
+
       if (!canEdit) {
         toast.error('Você não tem permissão para editar esta tarefa');
         return;
       }
 
-      // Atualizar a tarefa localmente
-      const updatedTasks = project.tasks?.map(t =>
-        t.id === taskId ? { ...t, status: newStatus } : t
-      ) || [];
+      // Usar o serviço para atualizar no Firebase (passando o ID do usuário)
+      await updateTaskStatusService(projectId, taskId, newStatus, user.uid);
 
-      // Atualizar o projeto no Firebase
-      await updateProject(projectId, { tasks: updatedTasks });
+      // Atualizar estado local
+      setUserProjects(prevProjects =>
+        prevProjects.map(p => {
+          if (p.id === projectId) {
+            const updatedTasks = p.tasks?.map(t =>
+              t.id === taskId ? { ...t, status: newStatus } : t
+            ) || [];
+
+            return {
+              ...p,
+              tasks: updatedTasks
+            };
+          }
+          return p;
+        })
+      );
 
       // Registrar atividade no contexto de colaboração
       try {
@@ -315,16 +356,19 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
         }
       } catch (activityError) {
         console.error('Erro ao registrar atividade:', activityError);
-        // Não falhar a operação se não conseguir registrar a atividade
       }
 
       // Atualizar estado local
       setUserProjects(prev =>
-        prev.map(p =>
-          p.id === projectId
-            ? { ...p, tasks: updatedTasks }
-            : p
-        )
+        prev.map(p => {
+          if (p.id === projectId) {
+            const updatedTasks = p.tasks?.map(t =>
+              t.id === taskId ? { ...t, status: newStatus } : t
+            ) || [];
+            return { ...p, tasks: updatedTasks };
+          }
+          return p;
+        })
       );
 
       toast.success(`Status da tarefa atualizado para ${newStatus === 'completed' ? 'concluída' : newStatus === 'active' ? 'ativa' : 'pendente'}`);
@@ -332,6 +376,64 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
     } catch (err) {
       console.error('Erro ao atualizar status da tarefa:', err);
       toast.error('Erro ao atualizar status da tarefa');
+    }
+  }, [user?.uid, user?.displayName, user?.email, userProjects]);
+
+  // Deletar tarefa com registro de atividade
+  const deleteTask = useCallback(async (projectId: string, taskId: string) => {
+    if (!user?.uid) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    try {
+      const project = userProjects.find(p => p.id === projectId);
+      if (!project) {
+        toast.error('Projeto não encontrado');
+        return;
+      }
+
+      const task = project.tasks?.find(t => t.id === taskId);
+      if (!task) {
+        toast.error('Tarefa não encontrada');
+        return;
+      }
+
+      // Verificar se o usuário pode deletar esta tarefa
+      const canDelete = task.assignees.includes(user.email || '') ||
+        task.assignees.includes(user.displayName || '') ||
+        project.userRole === 'admin' ||
+        project.userRole === 'manager' ||
+        project.createdBy === user.uid;
+
+      if (!canDelete) {
+        toast.error('Você não tem permissão para deletar esta tarefa');
+        return;
+      }
+
+      // Usar o serviço para deletar no Firebase
+      await deleteTaskService(projectId, taskId, user.uid);
+
+      // Atualizar estado local
+      setUserProjects(prevProjects =>
+        prevProjects.map(p => {
+          if (p.id === projectId) {
+            const updatedTasks = p.tasks?.filter(t => t.id !== taskId) || [];
+
+            return {
+              ...p,
+              tasks: updatedTasks
+            };
+          }
+          return p;
+        })
+      );
+
+      toast.success('Tarefa deletada com sucesso!');
+
+    } catch (err) {
+      console.error('Erro ao deletar tarefa:', err);
+      toast.error('Erro ao deletar tarefa');
     }
   }, [user?.uid, user?.displayName, user?.email, userProjects]);
 
@@ -363,13 +465,13 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
 
   // Recarregar todos os dados
   const refreshData = useCallback(async () => {
-    await loadProjects();
-  }, [loadProjects]);
+    await loadUserProjectsAsMember();
+  }, [loadUserProjectsAsMember]);
 
   // Efeitos
   useEffect(() => {
-    loadProjectsWithMembers();
-  }, [loadProjectsWithMembers]);
+    loadUserProjectsAsMember();
+  }, [loadUserProjectsAsMember]);
 
   useEffect(() => {
     // Tentar carregar estatísticas do Firebase primeiro, usar cálculo local como fallback
@@ -386,9 +488,11 @@ export const useCollaborationData = (): UseCollaborationDataReturn => {
   return {
     userProjects,
     stats,
-    loading: loading || projectsLoading,
+    loading,
     error,
+    lastUpdated,
     updateTaskStatus,
+    deleteTask,
     refreshData,
     getTasksForUser,
     getProjectsUserCanEdit

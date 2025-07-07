@@ -5,16 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Activity,
   CheckCircle,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  Eye
 } from 'lucide-react';
+import Link from 'next/link';
 import { ResponsiveContainer, PageSection } from '@/components/ui/responsive-container';
 import { GenericCollaboration } from '@/components/projecta/Collaboration/generic-collaboration';
 import { TaskCard } from '@/components/projecta/Collaboration/task-card';
 import { EmptyState } from '@/components/projecta/Collaboration/empty-state';
-import { CollaborationStats } from '@/components/projecta/Collaboration/collaboration-stats';
 import { useCollaborationData } from '@/hooks/useCollaborationData';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -22,7 +22,6 @@ export default function CollaborationPage() {
   const { user } = useAuth();
   const {
     userProjects,
-    stats,
     loading,
     error,
     updateTaskStatus,
@@ -45,7 +44,8 @@ export default function CollaborationPage() {
   // Obter todas as tarefas do usuário
   const userTasks = userProjects.flatMap(project =>
     project.tasks?.filter(task =>
-      task.assignees.includes(user?.uid || '')
+      task.assignees.includes(user?.email || '') ||
+      task.assignees.includes(user?.displayName || '')
     ).map(task => ({ ...task, projectId: project.id, projectTitle: project.title })) || []
   );
 
@@ -97,18 +97,18 @@ export default function CollaborationPage() {
         {/* Header da página */}
         <PageSection
           title="Colaboração do Projeto"
-          description="Sistema genérico de colaboração para projetos e tarefas"
+          description="Projetos e tarefas onde você participa como membro da equipe"
           action={
-            <>  </>
+            <div className="text-sm text-muted-foreground">
+              {user?.email && <span>Conectado como: {user.email}</span>}
+            </div>
           }
         />
 
-        {/* Estatísticas Rápidas */}
-        <CollaborationStats stats={stats} />
 
         {/* Navegação Principal */}
         <Tabs value={activeView} onValueChange={(value) => setActiveView(value as typeof activeView)}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="projects" className="flex items-center gap-2">
               <Target className="h-4 w-4" />
               Projetos
@@ -116,10 +116,6 @@ export default function CollaborationPage() {
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
               Minhas Tarefas
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Atividades
             </TabsTrigger>
           </TabsList>
 
@@ -144,20 +140,33 @@ export default function CollaborationPage() {
                       >
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">{project.title}</h4>
-                          <span className={`px-2 py-1 rounded text-xs ${project.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            project.status === 'active' ? 'bg-blue-100 text-blue-800' :
-                              project.status === 'planning' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
-                            }`}>
-                            {project.status === 'completed' ? 'Concluído' :
-                              project.status === 'active' ? 'Ativo' :
-                                project.status === 'planning' ? 'Planejamento' : 'Pausado'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded text-xs ${project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              project.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                                project.status === 'planning' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                              }`}>
+                              {project.status === 'completed' ? 'Concluído' :
+                                project.status === 'active' ? 'Ativo' :
+                                  project.status === 'planning' ? 'Planejamento' : 'Pausado'}
+                            </span>
+                            <Link href={`/apk/collaboration/${project.id}`}>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                           <span>Função: {project.userRole || 'Membro'}</span>
                           <span>Tarefas: {project.tasks?.length || 0}</span>
+                          <span>Minhas tarefas: {
+                            project.tasks?.filter(task =>
+                              task.assignees.includes(user?.email || '') ||
+                              task.assignees.includes(user?.displayName || '')
+                            ).length || 0
+                          }</span>
                         </div>
                       </div>
                     ))}
@@ -191,7 +200,8 @@ export default function CollaborationPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {userTasks.map((task) => {
                   const project = userProjects.find(p => p.id === task.projectId);
-                  const canEditTask = task.assignees.includes(user?.uid || '') ||
+                  const canEditTask = task.assignees.includes(user?.email || '') ||
+                    task.assignees.includes(user?.displayName || '') ||
                     project?.userRole === 'admin' ||
                     project?.userRole === 'manager';
 
@@ -231,27 +241,59 @@ export default function CollaborationPage() {
               </div>
             )}
           </TabsContent>
-
-          {/* Atividades Gerais */}
-          <TabsContent value="activity" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Feed de Atividades</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* Aqui poderia ser implementado um feed global de atividades do Firebase */}
-                <div className="text-center py-8">
-                  <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">Feed de Atividades em Desenvolvimento</h3>
-                  <p className="text-muted-foreground">
-                    O feed global de atividades está sendo implementado com dados do Firebase.
-                    Por enquanto, veja as atividades específicas em cada projeto e tarefa.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
+
+        {/* Debug Section - apenas em desenvolvimento */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="border-dashed border-yellow-400 bg-yellow-50">
+            <CardHeader>
+              <CardTitle className="text-yellow-800 text-sm">🐛 Debug - Colaboração</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs">
+              <div>
+                <span className="font-medium">Email do usuário:</span> {user?.email || 'N/A'}
+              </div>
+              <div>
+                <span className="font-medium">Nome do usuário:</span> {user?.displayName || 'N/A'}
+              </div>
+              <div>
+                <span className="font-medium">Projetos carregados:</span> {userProjects.length}
+              </div>
+              <div>
+                <span className="font-medium">Estado loading:</span> {loading ? 'Sim' : 'Não'}
+              </div>
+              <div>
+                <span className="font-medium">Erro:</span> {error || 'Nenhum'}
+              </div>
+
+              {userProjects.map(project => (
+                <div key={project.id} className="border rounded p-2 bg-white">
+                  <div><strong>Projeto:</strong> {project.title}</div>
+                  <div><strong>Role:</strong> {project.userRole}</div>
+                  <div><strong>Tasks:</strong> {project.tasks?.length || 0}</div>
+                  <div><strong>Minhas Tasks:</strong> {
+                    project.tasks?.filter(task =>
+                      task.assignees.includes(user?.email || '') ||
+                      task.assignees.includes(user?.displayName || '')
+                    ).length || 0
+                  }</div>
+                  <div className="text-xs text-gray-600">
+                    <strong>Team:</strong> {JSON.stringify(project.team?.map(t => ({ name: t.name, email: t.email })))}
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={refreshData}
+                className="mt-2"
+              >
+                🔄 Recarregar Dados
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </ResponsiveContainer>
   );

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 "use client"
 
 import React, { useState } from 'react';
@@ -88,7 +89,7 @@ export function TaskCollaboration({
         taskId: task.id,
         taskTitle: task.title,
         projectId: projectId,
-        projectTitle: 'Projeto' // Em uma app real, isso viria dos dados do projeto
+        projectTitle: 'Projeto' 
       }, users.find(u => u.id === userId)?.name || 'Usuário');
     }
     setIsAssigning(false);
@@ -120,7 +121,7 @@ export function TaskCollaboration({
         taskId: task.id,
         taskTitle: task.title,
         projectId: projectId,
-        projectTitle: 'Projeto' // Em uma app real, isso viria dos dados do projeto
+        projectTitle: 'Projeto' 
       });
     }
   };
@@ -128,8 +129,6 @@ export function TaskCollaboration({
   const handleAddUpdate = () => {
     if (!newUpdate.trim()) return;
 
-    // Aqui você pode adicionar lógica para salvar atualizações da tarefa
-    // Por enquanto, vamos apenas limpar o campo
     setNewUpdate('');
   };
 
@@ -323,6 +322,7 @@ export function TaskCollaboration({
         </CardHeader>
         {showComments && (
           <CardContent>
+            {/* @ts-ignore */}
             <CommentSection
               projectId={projectId}
               taskId={task.id}

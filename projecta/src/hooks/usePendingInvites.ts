@@ -21,15 +21,12 @@ export const usePendingInvites = () => {
     setError(null);
 
     try {
-      // Buscar convites pendentes por email
       const invites = await getPendingInvitesByEmail(user.email);
       setPendingInvites(invites);
 
       // Se há convites, verificar/criar notificações
       if (invites.length > 0) {
         await checkPendingInvitesOnLogin(user.email, user.uid, false);
-
-        // Limpar possíveis notificações duplicadas
         await cleanupDuplicateInviteNotifications(user.uid);
       }
 
@@ -43,13 +40,13 @@ export const usePendingInvites = () => {
     }
   };
 
-  // Forçar verificação de convites pendentes (útil para novos usuários)
+
   const forceCheckPendingInvites = async () => {
     if (!user?.email) return;
 
     try {
       const count = await checkPendingInvitesOnLogin(user.email, user.uid, true);
-      await checkPendingInvites(); // Atualizar estado local
+      await checkPendingInvites();
       return count;
     } catch (err) {
       console.error('Erro ao forçar verificação de convites:', err);

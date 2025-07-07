@@ -242,3 +242,221 @@ export const createTaskAssignmentNotification = async (
     }
   });
 };
+
+// Notificar mudança de status de tarefa
+export const notifyTaskStatusChange = async (
+  taskId: string,
+  taskTitle: string,
+  projectId: string,
+  projectTitle: string,
+  oldStatus: string,
+  newStatus: string,
+  changedBy: string,
+  teamMembers: string[], 
+  assignees: string[]
+): Promise<void> => {
+  try {
+    // Combinar membros do projeto e assignees, removendo duplicatas
+    const usersToNotify = [...new Set([...teamMembers, ...assignees])];
+    const filteredUsers = usersToNotify.filter(userId => userId !== changedBy);
+
+    const notifications = filteredUsers.map(userId =>
+      createNotification({
+        type: 'task_status_change',
+        title: 'Status de Tarefa Alterado',
+        message: `A tarefa "${taskTitle}" no projeto "${projectTitle}" mudou de ${oldStatus} para ${newStatus}`,
+        userId,
+        projectId,
+        taskId,
+        isRead: false,
+        priority: newStatus === 'completed' ? 'medium' : 'low',
+        actionUrl: `/apk/collaboration/${projectId}`,
+        metadata: {
+          oldStatus,
+          newStatus,
+          assignedBy: changedBy,
+          projectTitle
+        }
+      })
+    );
+
+    await Promise.all(notifications);
+  } catch (error) {
+    console.error('Erro ao enviar notificações de mudança de status:', error);
+  }
+};
+
+// Notificar atualização de projeto
+export const notifyProjectUpdate = async (
+  projectId: string,
+  projectTitle: string,
+  updateType: string,
+  updateDescription: string,
+  updatedBy: string,
+  teamMembers: string[]
+): Promise<void> => {
+  try {
+    // Não notificar quem fez a mudança
+    const filteredUsers = teamMembers.filter(userId => userId !== updatedBy);
+
+    const notifications = filteredUsers.map(userId =>
+      createNotification({
+        type: 'project_update',
+        title: 'Projeto Atualizado',
+        message: `O projeto "${projectTitle}" foi atualizado: ${updateDescription}`,
+        userId,
+        projectId,
+        isRead: false,
+        priority: 'medium',
+        actionUrl: `/apk/collaboration/${projectId}`,
+        metadata: {
+          assignedBy: updatedBy,
+          projectTitle
+        }
+      })
+    );
+
+    await Promise.all(notifications);
+  } catch (error) {
+    console.error('Erro ao enviar notificações de atualização de projeto:', error);
+  }
+};
+
+// Notificar convite aceito
+export const notifyInviteAccepted = async (
+  inviterId: string,
+  projectId: string,
+  projectTitle: string,
+  acceptedBy: string,
+  acceptedByEmail: string,
+  inviteId: string
+): Promise<void> => {
+  try {
+    await createNotification({
+      type: 'invite_accepted',
+      title: 'Convite Aceito',
+      message: `${acceptedBy} (${acceptedByEmail}) aceitou seu convite para o projeto "${projectTitle}"`,
+      userId: inviterId,
+      projectId,
+      isRead: false,
+      priority: 'medium',
+      actionUrl: `/apk/collaboration/${projectId}`,
+      metadata: {
+        acceptedBy,
+        acceptedByEmail,
+        inviteId,
+        projectTitle
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao enviar notificação de convite aceito:', error);
+  }
+};
+
+// Notificar nova atribuição de tarefa
+export const notifyTaskAssignment = async (
+  taskId: string,
+  taskTitle: string,
+  projectId: string,
+  projectTitle: string,
+  assignedBy: string,
+  newAssignees: string[]
+): Promise<void> => {
+  try {
+    // Não notificar quem fez a atribuição
+    const filteredAssignees = newAssignees.filter(userId => userId !== assignedBy);
+
+    const notifications = filteredAssignees.map(userId =>
+      createNotification({
+        type: 'task_assignment',
+        title: 'Nova Tarefa Atribuída',
+        message: `Você foi atribuído à tarefa "${taskTitle}" no projeto "${projectTitle}"`,
+        userId,
+        projectId,
+        taskId,
+        isRead: false,
+        priority: 'high',
+        actionUrl: `/apk/collaboration/${projectId}`,
+        metadata: {
+          assignedBy,
+          projectTitle
+        }
+      })
+    );
+    await Promise.all(notifications);
+  } catch (error) {
+    console.error('Erro ao enviar notificações de atribuição de tarefa:', error);
+  }
+};
+
+// Notificar tarefa próxima do prazo
+export const notifyTaskDeadlineApproaching = async (
+  taskId: string,
+  taskTitle: string,
+  projectId: string,
+  projectTitle: string,
+  dueDate: string,
+  daysUntilDue: number,
+  assignees: string[]
+): Promise<void> => {
+  try {
+    const priority = daysUntilDue <= 1 ? 'urgent' : daysUntilDue <= 3 ? 'high' : 'medium';
+
+    const notifications = assignees.map(userId =>
+      createNotification({
+        type: 'task_deadline',
+        title: 'Prazo de Tarefa Próximo',
+        message: `A tarefa "${taskTitle}" no projeto "${projectTitle}" tem prazo em ${daysUntilDue} dia(s)`,
+        userId,
+        projectId,
+        taskId,
+        isRead: false,
+        priority,
+        dueDate,
+        actionUrl: `/apk/collaboration/${projectId}`,
+        metadata: {
+          daysUntilDue,
+          projectTitle
+        }
+      })
+    );
+    await Promise.all(notifications);
+  } catch (error) {
+    console.error('Erro ao enviar notificações de prazo próximo:', error);
+  }
+};
+
+// Notificar tarefa em atraso
+export const notifyOverdueTask = async (
+  taskId: string,
+  taskTitle: string,
+  projectId: string,
+  projectTitle: string,
+  dueDate: string,
+  daysOverdue: number,
+  assignees: string[]
+): Promise<void> => {
+  try {
+    const notifications = assignees.map(userId =>
+      createNotification({
+        type: 'overdue_task',
+        title: 'Tarefa em Atraso',
+        message: `A tarefa "${taskTitle}" no projeto "${projectTitle}" está atrasada há ${daysOverdue} dia(s)`,
+        userId,
+        projectId,
+        taskId,
+        isRead: false,
+        priority: 'urgent',
+        dueDate,
+        actionUrl: `/apk/collaboration/${projectId}`,
+        metadata: {
+          daysUntilDue: -daysOverdue,
+          projectTitle
+        }
+      })
+    );
+    await Promise.all(notifications);
+  } catch (error) {
+    console.error('Erro ao enviar notificações de tarefa em atraso:', error);
+  }
+};

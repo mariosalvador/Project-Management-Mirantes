@@ -21,7 +21,6 @@ interface ActivityWidgetProps {
 
 export function ActivityWidget({ className, maxItems = 1 }: ActivityWidgetProps) {
   const { activities, unreadCount } = useActivity();
-  // Pegar as atividades mais recentes
   const recentActivities = activities.slice(0, maxItems);
 
   return (

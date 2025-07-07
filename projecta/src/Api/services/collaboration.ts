@@ -355,7 +355,6 @@ export const getUserRecentActivities = async (
       activities.push(...data.activities);
     });
 
-    // Ordenar por timestamp e retornar apenas o limite solicitado
     return activities
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limitCount);

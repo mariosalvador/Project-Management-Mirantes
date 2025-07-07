@@ -52,7 +52,7 @@ export default function LayoutWithSidebar({ children }: LayoutWithSidebarProps) 
                 onMenuClick={() => setIsMobileMenuOpen(true)}
                 showMenuButton={isMobile}
               />
-              <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">{children}</main>
+              <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 bg-gray-50">{children}</main>
             </div>
           </div>
 

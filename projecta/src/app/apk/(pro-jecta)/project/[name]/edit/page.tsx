@@ -187,7 +187,7 @@ export default function EditProjectPage() {
 
       // Para projetos em edição, permitir datas passadas se o projeto já está concluído
       if (formData.status !== 'completed' && formData.dueDate < todayStr) {
-        // Apenas aviso, não erro, para projetos em andamento
+        // Apenas aviso, para projetos em andamento
         if (formData.status === 'active') {
           // Permitir, mas será mostrado aviso
         } else {
@@ -304,15 +304,29 @@ export default function EditProjectPage() {
   };
 
   const handleDelete = async () => {
-    if (!project) return;
+    if (!project) {
+      console.error("Erro: projeto não encontrado")
+      toast.error("Erro: projeto não encontrado");
+      return;
+    }
 
     try {
       await deleteProject(project.id);
       toast.success("Projeto removido com sucesso!");
+
+      // Fechar o modal antes de navegar
+      setShowDeleteDialog(false);
+
       router.push("/apk/project");
     } catch (error) {
-      console.error("Erro ao deletar projeto:", error);
-      toast.error("Erro ao deletar projeto");
+      console.error("=== ERRO NA EXCLUSÃO ===")
+      console.error("Tipo do erro:", typeof error)
+      console.error("Erro completo:", error);
+
+      // Mostrar mensagem de erro mais específica
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao deletar projeto";
+      toast.error(`Erro ao deletar projeto: ${errorMessage}`);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -399,6 +413,7 @@ export default function EditProjectPage() {
             <Trash2 className="h-4 w-4 mr-2" />
             Deletar
           </Button>
+
           <Button variant="outline" onClick={() => router.push(`/apk/project/${project.title}`)}>
             Cancelar
           </Button>
@@ -739,7 +754,7 @@ export default function EditProjectPage() {
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={handleDelete}
         title="Deletar Projeto"
-        description={`Tem certeza que deseja deletar o projeto "${project.title}"? Esta ação não pode ser desfeita e todos os dados do projeto serão perdidos permanentemente.`}
+        description={`Tem certeza que deseja deletar o projeto "${project.title}"? Esta ação irá arquivar o projeto e ele não aparecerá mais na sua lista. ID do projeto: ${project.id}`}
         confirmText="Deletar Projeto"
         cancelText="Cancelar"
         variant="destructive"

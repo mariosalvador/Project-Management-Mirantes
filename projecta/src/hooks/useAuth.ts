@@ -16,11 +16,9 @@ export interface UseAuthReturn {
   error: string
   success: string
 
-  // Funções de login
   handleLogin: (email: string, password: string) => Promise<void>
   handleGoogleLogin: () => Promise<void>
 
-  // Funções de registro
   handleRegister: (name: string, email: string, password: string, confirmPassword: string) => Promise<void>
 
   // Funções utilitárias
@@ -43,7 +41,6 @@ export const useAuth = (): UseAuthReturn => {
     setIsLoading(true)
     clearMessages()
 
-    // Validar campos do formulário
     const validation = validateLoginForm(email, password)
     if (!validation.isValid) {
       setError(validation.error || "Dados inválidos")

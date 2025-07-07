@@ -11,6 +11,15 @@ import { Separator } from "@/components/ui/separator";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Avatar } from "@/components/ui/avatar";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft,
   Plus,
   X,
@@ -21,14 +30,16 @@ import {
   AlertCircle,
   Target,
   Tag,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { TeamMember, Task } from "@/types/project";
 import { useProjectByTitle } from "@/hooks/useProjects";
-import { updateProject } from "@/Api/services/projects";
+import { updateProject, deleteTask } from "@/Api/services/projects";
 import { getPriorityColor, getPriorityLabel, getStatusColor, getStatusLabel } from "@/utils/tasksFormatters";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 interface TaskFormData {
@@ -44,11 +55,13 @@ interface TaskFormData {
   tags: string[];
   dependencies: string[];
 }
-
 export default function TaskManagePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { name } = useParams<{ name: string }>();
   const [taskId, setTaskId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -255,6 +268,44 @@ export default function TaskManagePage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!project || !taskId || !user?.uid) {
+      toast.error('Dados necessários não encontrados');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Verificar se o usuário pode deletar esta tarefa
+      const task = existingTask;
+      if (!task) {
+        toast.error('Tarefa não encontrada');
+        return;
+      }
+
+      const canDelete = task.assignees.includes(user.email || '') ||
+        task.assignees.includes(user.displayName || '') ||
+        project.createdBy === user.uid; 
+
+      if (!canDelete) {
+        toast.error('Você não tem permissão para deletar esta tarefa');
+        return;
+      }
+
+      // Deletar tarefa usando o serviço
+      await deleteTask(project.id, taskId, user.uid);
+
+      toast.success('Tarefa deletada com sucesso!');
+      setShowDeleteDialog(false);
+      router.push(`/apk/project/${encodeURIComponent(project.title)}/tasks`);
+    } catch (error) {
+      console.error('Erro ao deletar tarefa:', error);
+      toast.error('Erro ao deletar tarefa');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="container">
       {/* Breadcrumb */}
@@ -289,6 +340,41 @@ export default function TaskManagePage() {
           <Button variant="outline" onClick={() => router.push(`/apk/project/${encodeURIComponent(project.title)}`)}>
             Cancelar
           </Button>
+          {isEditing && (
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <DialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Deletar
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Deletar Tarefa</DialogTitle>
+                  <DialogDescription>
+                    Tem certeza de que deseja deletar a tarefa &ldquo;{existingTask?.title}&rdquo;?
+                    Esta ação não pode ser desfeita.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteDialog(false)}
+                    disabled={isDeleting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Deletando...' : 'Deletar Tarefa'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
           <Button onClick={handleSubmit}>
             <Save className="h-4 w-4 mr-2" />
             {isEditing ? "Salvar Alterações" : "Criar Tarefa"}

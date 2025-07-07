@@ -60,10 +60,7 @@ interface TeamStats {
 export default function TeamPage() {
   const { user } = useAuth();
   const { toast, showToast, hideToast } = useToast();
-
   const projectId = user?.uid ? `project-${user.uid}` : 'demo-project';
-
-  // Hook para membros do usuário
   const {
     members: userMembers,
     sentInvites,
@@ -73,7 +70,6 @@ export default function TeamPage() {
     error: userMembersError
   } = useUserMembers();
 
-  // Hook para gerenciar membros no projeto
   const {
     projectMembers,
     availableMembers,
@@ -140,14 +136,6 @@ export default function TeamPage() {
       showToast("Por favor, insira um email válido.", "error");
       return;
     }
-
-    console.log('Dados do usuário antes do envio:', {
-      uid: user?.uid,
-      displayName: user?.displayName,
-      email: user?.email,
-      inviteEmail: inviteEmail.trim(),
-      inviteRole
-    });
 
     try {
       const success = await sendInvite(inviteEmail.trim(), inviteRole, inviteMessage.trim() || undefined);

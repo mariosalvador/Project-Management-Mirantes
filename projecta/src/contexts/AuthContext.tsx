@@ -108,7 +108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   )
 }
 
-// Hook para salvar usuário (será usado nos serviços de auth)
 export const useSaveUser = () => {
   const saveUserToFirestore = async (user: User, provider: 'email' | 'google') => {
     try {
@@ -129,7 +128,6 @@ export const useSaveUser = () => {
           provider
         })
       } else {
-        // Usuário existente - atualizar último login
         await setDoc(userRef, {
           lastLoginAt: now.toISOString(),
           // Atualizar dados se vieram do provider

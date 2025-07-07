@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { UserRole } from "@/types/collaboration";
+import { createTeamInviteNotification, notifyInviteAccepted } from "./notifications";
 
 export interface TeamInvitation {
   id: string;
@@ -60,8 +61,6 @@ export const sendTeamInvite = async (
 
     const inviteRef = doc(db, 'team_invitations', inviteId);
     await setDoc(inviteRef, invitation);
-
-    // Criar notificação se o usuário já existir
     await createInviteNotificationIfUserExists(email, invitation);
 
     return invitation;
@@ -82,34 +81,15 @@ const createInviteNotificationIfUserExists = async (email: string, invitation: T
       const userData = querySnapshot.docs[0].data();
       const userId = userData.uid;
 
-      // Verificar se já existe notificação para este convite
-      const notificationExists = await notificationExistsForInvite(userId, invitation.id);
-
-      if (!notificationExists) {
-        const notificationId = `invite_${invitation.id}_${userId}_${Date.now()}`;
-        const notificationRef = doc(db, 'notifications', notificationId);
-
-        await setDoc(notificationRef, {
-          id: notificationId,
-          type: 'team_invitation',
-          title: 'Convite para Equipe',
-          message: `Você foi convidado para participar do projeto "${invitation.projectTitle}" como ${getRoleLabel(invitation.role)}`,
-          userId,
-          projectId: invitation.projectId,
-          invitationId: invitation.id,
-          isRead: false,
-          priority: 'medium',
-          createdAt: new Date().toISOString(),
-          actionUrl: `/apk/team/invites/${invitation.id}`,
-          metadata: {
-            invitedBy: invitation.invitedByName,
-            role: invitation.role,
-            projectTitle: invitation.projectTitle
-          }
-        });
-
-      }
-    }
+      await createTeamInviteNotification(
+        userId,
+        invitation.projectId,
+        invitation.projectTitle,
+        invitation.invitedByName,
+        getRoleLabel(invitation.role),
+        invitation.id
+      );
+    } 
   } catch (error) {
     console.error('Erro ao criar notificação de convite:', error);
   }
@@ -120,7 +100,6 @@ export const getProjectInvites = async (projectId: string, currentUserId?: strin
   try {
 
     const invitesRef = collection(db, 'team_invitations');
-    // Simplificar a query para evitar índices compostos
     const q = query(
       invitesRef,
       where('projectId', '==', projectId)
@@ -238,29 +217,14 @@ export const acceptInvite = async (inviteId: string, acceptingUserId: string, ac
       invite.role
     );
 
-    // 3. Criar notificação para quem enviou o convite
-    const notificationId = `invite_accepted_${inviteId}_${Date.now()}`;
-    const notificationRef = doc(db, 'notifications', notificationId);
-
-    await setDoc(notificationRef, {
-      id: notificationId,
-      type: 'invite_accepted',
-      title: 'Convite Aceito',
-      message: `${acceptingUserName} aceitou seu convite para participar do projeto "${invite.projectTitle}" como ${getRoleLabel(invite.role)}`,
-      userId: invite.invitedBy,
-      projectId: invite.projectId,
-      isRead: false,
-      priority: 'medium',
-      createdAt: now.toISOString(),
-      actionUrl: `/apk/team`,
-      metadata: {
-        acceptedBy: acceptingUserName,
-        acceptedByEmail: acceptingUserEmail,
-        role: invite.role,
-        projectTitle: invite.projectTitle,
-        inviteId: inviteId
-      }
-    });
+    await notifyInviteAccepted(
+      invite.invitedBy,
+      invite.projectId,
+      invite.projectTitle,
+      acceptingUserName,
+      acceptingUserEmail,
+      inviteId
+    );
 
     return true;
   } catch (error) {
@@ -431,7 +395,6 @@ export const checkPendingInvitesOnLogin = async (email: string, userId: string, 
       const expiresAt = new Date(invite.expiresAt);
 
       if (now > expiresAt) {
-        // Marcar como expirado
         await updateInviteStatus(invite.id, 'expired');
       } else {
         pendingInvites.push({ ...invite, id: docSnap.id });
@@ -472,7 +435,6 @@ export const checkPendingInvitesOnLogin = async (email: string, userId: string, 
 
       }
     }
-
     return pendingInvites.length;
   } catch (error) {
     console.error('Erro ao verificar convites pendentes:', error);

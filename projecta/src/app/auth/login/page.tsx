@@ -34,13 +34,8 @@ export default function LoginPage() {
 
     try {
       const user = await signIn(email, password);
-
       if (user) {
-        const urlParams = new URLSearchParams(window.location.search)
-        const redirectTo = urlParams.get('redirect') || '/apk'
-
-        // Usar window.location.href para uma navegação completa
-        window.location.href = redirectTo
+        window.location.href = "/apk"
       }
     } catch (err: unknown) {
       console.error("Login error:", err)
@@ -59,11 +54,7 @@ export default function LoginPage() {
       const user = await signInWithGoogle()
 
       if (user) {
-        const urlParams = new URLSearchParams(window.location.search)
-        const redirectTo = urlParams.get('redirect') || '/apk'
-
-        // Usar window.location.href para uma navegação completa
-        window.location.href = redirectTo
+        window.location.href = "/apk"
       }
     } catch (err: unknown) {
       console.error("Google login error:", err)

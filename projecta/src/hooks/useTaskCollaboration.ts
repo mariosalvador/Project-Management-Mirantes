@@ -14,8 +14,6 @@ interface UseTaskCollaborationProps {
 export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaborationProps) {
   const { hasPermission, currentUser, users } = usePermissions();
   const { logTaskAssigned, logTaskUpdated, logTaskStatusChanged } = useActivityLogger();
-
-  // Estado das tarefas (em uma aplicação real, isso viria de um contexto ou API)
   const [tasks, setTasks] = useState<TaskWithCollaboration[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -56,7 +54,7 @@ export function useTaskCollaboration({ projectId, taskId }: UseTaskCollaboration
           taskId,
           taskTitle: currentTask.title,
           projectId,
-          projectTitle: 'Projeto' // Em uma app real, isso viria dos dados do projeto
+          projectTitle: 'Projeto'
         }, assignedUser.name);
       }
 

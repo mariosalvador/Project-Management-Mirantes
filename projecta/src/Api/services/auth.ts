@@ -47,8 +47,6 @@ const saveUserToFirestore = async (user: User, provider: 'email' | 'google', isN
       : baseData
 
     await setDoc(userRef, userData, { merge: true })
-
-    // Verificar convites pendentes após salvar usuário
     if (user.email) {
       await checkPendingInvitesOnLogin(user.email, user.uid, isNewUser)
     }
@@ -67,7 +65,6 @@ export const signUp = async (email: string, password: string) => {
     }
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-    // Marcar como novo usuário
     await saveUserToFirestore(userCredential.user, 'email', true)
 
     return userCredential.user
@@ -77,7 +74,6 @@ export const signUp = async (email: string, password: string) => {
     if (firebaseError.code === 'auth/email-already-in-use') {
       throw new Error('EMAIL_ALREADY_EXISTS')
     }
-    // Re-throw outros erros
     throw error
   }
 }

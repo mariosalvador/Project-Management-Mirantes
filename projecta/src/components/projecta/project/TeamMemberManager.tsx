@@ -32,7 +32,6 @@ const defaultRoleOptions = [
   { value: "designer", label: "Designer" },
   { value: "tester", label: "Testador" },
   { value: "analyst", label: "Analista" },
-  { value: "stakeholder", label: "Stakeholder" },
   { value: "other", label: "Outro" }
 ];
 

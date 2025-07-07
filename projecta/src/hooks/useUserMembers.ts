@@ -102,7 +102,6 @@ export const useUserMembers = () => {
     message?: string
   ): Promise<boolean> => {
     if (!user?.uid || !user?.email) {
-      console.error('Dados do usuário incompletos:', { uid: user?.uid, displayName: user?.displayName, email: user?.email });
       setError('Dados do usuário incompletos. Faça login novamente.');
       return false;
     }
@@ -114,8 +113,6 @@ export const useUserMembers = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log('Enviando convite:', { email, defaultRole, userId: user.uid, userName, userEmail: user.email });
-
       await sendMemberInvite(
         email,
         defaultRole,
@@ -124,8 +121,6 @@ export const useUserMembers = () => {
         user.email,
         message
       );
-
-      console.log('Convite enviado com sucesso');
 
       // Atualizar listas
       await fetchSentInvites();
@@ -339,7 +334,7 @@ export const useProjectMemberManagement = (projectId: string) => {
       setIsLoading(true);
       const success = await assignMemberToProject(
         projectId,
-        'Projeto', // Você pode passar o título real do projeto
+        'Projeto', 
         member.memberUserId,
         member.memberName,
         member.memberEmail,
@@ -436,7 +431,7 @@ export const useTaskMemberManagement = (taskId: string, projectId: string) => {
       setIsLoading(true);
       const success = await assignMemberToTask(
         taskId,
-        'Tarefa', // Você pode passar o título real da tarefa
+        'Tarefa',
         projectId,
         projectMember.memberUserId,
         projectMember.memberName,

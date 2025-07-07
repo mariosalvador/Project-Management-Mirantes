@@ -31,7 +31,6 @@ export const useProjectMembers = (projectId: string) => {
 
       // Se o projeto não tem membros e temos um usuário logado, criar como admin
       if (projectMembers.length === 0 && user?.uid && user?.email) {
-        console.log('Projeto vazio, criando usuário como admin...');
         const success = await addProjectMember(
           projectId,
           user.uid,
@@ -61,7 +60,6 @@ export const useProjectMembers = (projectId: string) => {
     try {
       const role = await getUserProjectRole(projectId, user.uid);
       setCurrentUserRole(role);
-      console.log(`Role do usuário ${user.uid} no projeto ${projectId}:`, role);
     } catch (err) {
       console.error('Erro ao obter role do usuário:', err);
       setCurrentUserRole(null);

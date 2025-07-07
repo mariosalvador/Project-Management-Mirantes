@@ -4,7 +4,7 @@ import { useNotifications } from './useNotifications';
 
 export function useTaskDeadlineMonitor(tasks: Task[], project: Project | undefined) {
   // TODO: Implementar funções de notificação no useNotifications
-  // const { notifyTaskDeadline, notifyOverdueTask } = useNotifications();
+  const { notifyTaskDeadline, notifyOverdueTask } = useNotifications();
 
   useEffect(() => {
     if (!tasks || !project) return;
@@ -25,13 +25,11 @@ export function useTaskDeadlineMonitor(tasks: Task[], project: Project | undefin
         // Verificar se a tarefa está vencida
         if (diffDays < 0) {
           const daysOverdue = Math.abs(diffDays);
-          console.log(`Tarefa vencida: ${task.title} - ${daysOverdue} dias`);
-          // notifyOverdueTask(task, daysOverdue, project.title);
+          notifyOverdueTask(task, daysOverdue, project.title);
         }
         // Verificar se o prazo está se aproximando
         else if (diffDays <= 3 && diffDays >= 0) {
-          console.log(`Prazo se aproximando: ${task.title} - ${diffDays} dias`);
-          // notifyTaskDeadline(task, diffDays, project.title);
+          notifyTaskDeadline(task, diffDays, project.title);
         }
       });
     };
@@ -44,39 +42,6 @@ export function useTaskDeadlineMonitor(tasks: Task[], project: Project | undefin
 
     return () => clearInterval(interval);
   }, [tasks, project]);
-}
-
-// Hook para monitorar mudanças em tempo real
-export function useRealTimeNotifications() {
-  // TODO: Implementar funções de notificação no useNotifications
-  // const {
-  //   notifyTaskAssignment,
-  //   notifyProjectAssignment,
-  //   notifyTaskStatusChange
-  // } = useNotifications();
-
-  // Simular recebimento de notificações em tempo real (WebSocket)
-  useEffect(() => {
-    // Aqui você conectaria com um WebSocket real
-    const mockWebSocket = () => {
-      console.log('🔔 Sistema de notificações em tempo real ativo');
-
-      // Simular algumas notificações após um tempo
-      setTimeout(() => {
-        // Exemplo: nova tarefa atribuída
-        console.log('📨 Nova notificação simulada: Tarefa atribuída');
-      }, 30000); // 30 segundos
-    };
-
-    mockWebSocket();
-  }, []);
-
-  return {
-    // TODO: Retornar funções reais quando implementadas
-    // notifyTaskAssignment,
-    // notifyProjectAssignment,
-    // notifyTaskStatusChange
-  };
 }
 
 // Hook para estatísticas de notificações

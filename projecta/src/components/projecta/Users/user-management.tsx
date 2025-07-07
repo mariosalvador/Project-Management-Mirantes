@@ -42,8 +42,8 @@ export function UserManagement({ className }: UserManagementProps) {
       logUserRoleChanged({
         userId: user.id,
         userName: user.name,
-        projectId: 'current-project', // Seria obtido do contexto real
-        projectTitle: 'Projeto Atual' // Seria obtido do contexto real
+        projectId: 'current-project',
+        projectTitle: 'Projeto Atual'
       }, newRole);
     }
   };
@@ -55,8 +55,8 @@ export function UserManagement({ className }: UserManagementProps) {
       logUserRemoved({
         userId: user.id,
         userName: user.name,
-        projectId: 'current-project', // Seria obtido do contexto real
-        projectTitle: 'Projeto Atual' // Seria obtido do contexto real
+        projectId: 'current-project',
+        projectTitle: 'Projeto Atual'
       });
     }
   };

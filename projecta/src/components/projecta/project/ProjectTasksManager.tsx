@@ -167,17 +167,17 @@ export default function ProjectTasksManager({
             />
           </div>
 
-          <div className="flex items-end">
-            <Button
-              type="button"
-              onClick={addTask}
-              className="w-full"
-              disabled={!newTask.title || !newTask.assignee || !newTask.dueDate}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar
-            </Button>
-          </div>
+        </div>
+        <div className="flex items-end">
+          <Button
+            type="button"
+            onClick={addTask}
+            className="w-full"
+            disabled={!newTask.title || !newTask.assignee || !newTask.dueDate}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar
+          </Button>
         </div>
 
         {/* Lista de tarefas */}
